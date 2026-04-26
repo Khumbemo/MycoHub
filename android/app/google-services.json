@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "148895400211",
+    "project_id": "mycohub-mutha",
+    "storage_bucket": "mycohub-mutha.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:148895400211:android:d2b7e6ba250c4847515ae6",
+        "android_client_info": {
+          "package_name": "com.mutha.MycoHub"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDIQVXIt5gJFun2Eb4YYQP-U8hMCG0UCUw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
