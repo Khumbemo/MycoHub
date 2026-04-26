@@ -155,25 +155,26 @@ const MainLayout: React.FC = () => {
       <div className="mt-10 md:mt-8 flex flex-col flex-1">
         <TopHeader />
         <main className="flex-1 max-w-md mx-auto px-4 pt-4 md:max-w-2xl lg:max-w-4xl w-full overflow-x-hidden">
-        <AnimatePresence mode="wait" custom={direction}>
-          <motion.div
-            key={location.pathname}
-            custom={direction}
-            initial={{ opacity: 0, x: direction * 50 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: direction * -50 }}
-            transition={{ duration: 0.2, ease: "easeInOut" }}
-            drag="x"
-            dragConstraints={{ left: 0, right: 0 }}
-            dragElastic={0.05}
-            onDragEnd={handleDragEnd}
-            className="w-full h-full touch-pan-y"
-          >
-            <Outlet />
-          </motion.div>
-        </AnimatePresence>
-      </main>
-      <BottomNav />
+          <AnimatePresence mode="wait" custom={direction}>
+            <motion.div
+              key={location.pathname}
+              custom={direction}
+              initial={{ opacity: 0, x: direction * 50 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: direction * -50 }}
+              transition={{ duration: 0.2, ease: "easeInOut" }}
+              drag="x"
+              dragConstraints={{ left: 0, right: 0 }}
+              dragElastic={0.05}
+              onDragEnd={handleDragEnd}
+              className="w-full h-full touch-pan-y"
+            >
+              <Outlet />
+            </motion.div>
+          </AnimatePresence>
+        </main>
+        <BottomNav />
+      </div>
     </div>
   );
 };

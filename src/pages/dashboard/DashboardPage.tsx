@@ -4,7 +4,7 @@ import { TrendingUp, Map as MapIcon, Clock, CheckCircle } from 'lucide-react';
 
 const StatCard = ({ icon: Icon, label, value, color }: any) => (
   <div className="bg-white p-4 rounded-3xl shadow-sm border border-gray-100 flex flex-col gap-2">
-    <div className={+`w-10 h-10 rounded-2xl flex items-center justify-center ${color}`+}>
+    <div className={`w-10 h-10 rounded-2xl flex items-center justify-center ${color}`}>
       <Icon className="w-5 h-5 text-white" />
     </div>
     <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{label}</span>
