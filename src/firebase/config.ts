@@ -3,14 +3,13 @@ import { getAuth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 
-// REPLACE THESE WITH YOUR ACTUAL FIREBASE CONFIG
 const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "your-app.firebaseapp.com",
-  projectId: "your-app",
-  storageBucket: "your-app.appspot.com",
-  messagingSenderId: "YOUR_SENDER_ID",
-  appId: "YOUR_APP_ID"
+  apiKey: "AIzaSyDIQVXIt5gJFun2Eb4YYQP-U8hMCG0UCUw",
+  authDomain: "mycohub-mutha.firebaseapp.com",
+  projectId: "mycohub-mutha",
+  storageBucket: "mycohub-mutha.firebasestorage.app",
+  messagingSenderId: "148895400211",
+  appId: "1:148895400211:android:d2b7e6ba250c4847515ae6"
 };
 
 const app = initializeApp(firebaseConfig);
