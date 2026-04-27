@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom';
-import { Home, PlusSquare, Search, Users, Activity, Settings, ArrowLeft } from 'lucide-react';
+import { Home, PlusSquare, Search, Users, Activity, Settings, ArrowLeft, MessageCircle } from 'lucide-react';
 import { cn } from '../../utils/cn';
 import { motion, AnimatePresence } from 'framer-motion';
 import SafetyDisclaimer from '../SafetyDisclaimer';
@@ -66,10 +66,10 @@ const TopHeader = () => {
 
 const navItems = [
   { to: '/', icon: Home, label: 'Dash' },
-  { to: '/entry', icon: PlusSquare, label: 'Entry' },
-  { to: '/species', icon: Search, label: 'Species' },
-  { to: '/community', icon: Users, label: 'Comm' },
   { to: '/research', icon: Activity, label: 'Labs' },
+  { to: '/entry', icon: PlusSquare, label: 'Entry' },
+  { to: '/chat', icon: MessageCircle, label: 'AI AI' },
+  { to: '/community', icon: Users, label: 'Comm' },
 ];
 
 const BottomNav = () => {

@@ -8,6 +8,8 @@ import DashboardPage from './pages/dashboard/DashboardPage';
 import FieldEntryPage from './pages/entry/FieldEntryPage';
 import SpeciesDBPage from './pages/species/SpeciesDBPage';
 import CommunityPage from './pages/community/CommunityPage';
+import ResearchDashboardPage from './pages/dashboard/ResearchDashboardPage';
+import ChatPage from './pages/chat/ChatPage';
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { loading, user } = useAuth();
@@ -34,7 +36,8 @@ const AppRoutes = () => {
         <Route path="entry" element={<FieldEntryPage />} />
         <Route path="species" element={<SpeciesDBPage />} />
         <Route path="community" element={<CommunityPage />} />
-        <Route path="research" element={<ResearchPage />} />
+        <Route path="research" element={<ResearchDashboardPage />} />
+        <Route path="chat" element={<ChatPage />} />
         <Route path="settings" element={<SettingsPage />} />
       </Route>
     </Routes>
