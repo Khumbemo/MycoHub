@@ -33,30 +33,36 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   useEffect(() => {
+    if (!auth) {
+      setLoading(false);
+      return;
+    }
+
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       if (firebaseUser) {
         try {
-          const userDoc = await getDoc(doc(db, 'users', firebaseUser.uid));
-          if (userDoc.exists()) {
-            setUser(userDoc.data() as UserProfile);
-          } else {
-            const newProfile: UserProfile = {
-              id: firebaseUser.uid,
-              email: firebaseUser.email || 'guest@mycohub.app',
-              displayName: firebaseUser.displayName || 'Researcher',
-              role: 'COLLECTOR',
-              joinedAt: new Date(),
-            };
-            await setDoc(doc(db, 'users', firebaseUser.uid), newProfile);
-            setUser(newProfile);
+          if (db) {
+            const userDoc = await getDoc(doc(db, 'users', firebaseUser.uid));
+            if (userDoc.exists()) {
+              setUser(userDoc.data() as UserProfile);
+            } else {
+              const newProfile: UserProfile = {
+                id: firebaseUser.uid,
+                email: firebaseUser.email || 'guest@mycohub.app',
+                displayName: firebaseUser.displayName || 'Researcher',
+                role: 'COLLECTOR',
+                joinedAt: new Date(),
+              };
+              await setDoc(doc(db, 'users', firebaseUser.uid), newProfile);
+              setUser(newProfile);
+            }
           }
         } catch (e) {
-          console.error("Firestore error, falling back to local state:", e);
-          // Still set user even if Firestore fails
+          console.error("Auth sync failed:", e);
           setUser({
             id: firebaseUser.uid,
             email: firebaseUser.email || '',
-            displayName: firebaseUser.displayName || 'Researcher',
+            displayName: 'Researcher (Offline)',
             role: 'COLLECTOR',
             joinedAt: new Date(),
           });
@@ -71,20 +77,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const login = async () => {
+    if (!auth) throw new Error("Auth not initialized");
     const provider = new GoogleAuthProvider();
     await signInWithPopup(auth, provider);
   };
 
   const loginGuest = async () => {
+    if (!auth) throw new Error("Auth not initialized");
     await signInAnonymously(auth);
   };
 
-  // FAIL-SAFE: If Firebase completely fails (e.g. network/config issues)
   const loginEmergencyBypass = () => {
     const bypassUser: UserProfile = {
-      id: 'bypass-' + Math.random().toString(36).slice(2),
-      email: 'bypass@mycohub.app',
-      displayName: 'Offline Researcher',
+      id: 'bypass-' + Date.now(),
+      email: 'offline@mycohub.app',
+      displayName: 'Local Researcher',
       role: 'ADMIN',
       joinedAt: new Date(),
     };
@@ -93,7 +100,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const logout = async () => {
-    await signOut(auth);
+    if (auth) await signOut(auth);
     setUser(null);
   };
 

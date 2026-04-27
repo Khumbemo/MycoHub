@@ -1,4 +1,4 @@
-import { collection, addDoc, serverTimestamp, updateDoc, doc } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '../firebase/config';
 import { localDb } from './db';
@@ -11,18 +11,23 @@ export const saveObservation = async (observation: Omit<Observation, 'id'>, phot
   await localDb.observations.add(localObs);
 
   // 2. Try to sync to Firebase if online
+  if (!db || !storage) {
+    console.warn("Offline: Firebase not initialized. Data saved locally.");
+    return tempId;
+  }
+
   try {
     // Upload photos first
     const mediaUrls = await Promise.all(photos.map(async (file) => {
-      const storageRef = ref(storage, `observations/${tempId}/${file.name}`);
+      const storageRef = ref(storage!, `observations/${tempId}/${file.name}`);
       const snapshot = await uploadBytes(storageRef, file);
       return await getDownloadURL(snapshot.ref);
     }));
 
     // Save to Firestore
-    const docRef = await addDoc(collection(db, 'observations'), {
+    const docRef = await addDoc(collection(db!, 'observations'), {
       ...observation,
-      media: mediaUrls.map(url => ({ url, type: 'HABITAT' })), // Simplified for now
+      media: mediaUrls.map(url => ({ url, type: 'HABITAT' })),
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
     });
@@ -31,7 +36,7 @@ export const saveObservation = async (observation: Omit<Observation, 'id'>, phot
     await localDb.observations.update(tempId, { id: docRef.id });
     return docRef.id;
   } catch (error) {
-    console.warn("Offline: Data saved locally and will sync later.", error);
+    console.warn("Offline: Sync failed. Data is safe locally.", error);
     return tempId;
   }
 };
