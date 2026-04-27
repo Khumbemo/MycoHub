@@ -23,7 +23,7 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
 // Placeholder components for remaining modules
 const ResearchPage = () => <div className="p-12 text-center font-black text-gray-300 uppercase tracking-widest leading-relaxed">Research & Labs Module<br/><span className="text-[10px] text-gray-200">Phenology · Richness · GIS</span></div>;
 const SettingsPage = () => <div className="p-12 text-center font-black text-gray-300 uppercase tracking-widest leading-relaxed">Settings & Profile<br/><span className="text-[10px] text-gray-200">ORCID ID: 0000-0002-1825-0097</span></div>;
-const LoginPage = () => <div className="p-8 text-center font-black text-emerald-600 uppercase tracking-widest">Login (Auto-redirect in 1s)</div>;
+import LoginPage from './pages/auth/LoginPage';
 
 const AppRoutes = () => {
   return (
