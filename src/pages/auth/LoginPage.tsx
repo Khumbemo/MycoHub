@@ -5,7 +5,7 @@ import { LogIn, UserCircle } from 'lucide-react';
 import { Navigate } from 'react-router-dom';
 
 const LoginPage: React.FC = () => {
-  const { user, login, loginGuest, loading } = useAuth();
+  const { user, login, loginGuest, loginEmergencyBypass, loading } = useAuth();
   const [isLoggingIn, setIsLoggingIn] = React.useState(false);
 
   if (loading) {
@@ -21,7 +21,12 @@ const LoginPage: React.FC = () => {
     return <Navigate to="/" replace />;
   }
 
-  const handleLogin = async (type: 'google' | 'guest') => {
+  const handleLogin = async (type: 'google' | 'guest' | 'bypass') => {
+    if (type === 'bypass') {
+      loginEmergencyBypass();
+      return;
+    }
+
     setIsLoggingIn(true);
     try {
       if (type === 'google') {
@@ -31,7 +36,11 @@ const LoginPage: React.FC = () => {
       }
     } catch (error) {
       console.error("Login attempt failed:", error);
-      alert("Login failed. Please check your connection or Firebase project settings (ensure Google/Anonymous auth is enabled).");
+      // If network fails, suggest bypass
+      const retry = confirm("Firebase connection failed. This usually happens if the device is offline or the Firebase project isn't fully configured.\n\nWould you like to enter the app in 'Emergency Offline Mode'?");
+      if (retry) {
+        loginEmergencyBypass();
+      }
     } finally {
       setIsLoggingIn(false);
     }

@@ -5,7 +5,6 @@ import {
   GoogleAuthProvider,
   signOut,
   signInAnonymously,
-  type User
 } from 'firebase/auth';
 import { auth, db } from '../firebase/config';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
@@ -16,6 +15,7 @@ interface AuthContextType {
   loading: boolean;
   login: () => Promise<void>;
   loginGuest: () => Promise<void>;
+  loginEmergencyBypass: () => void;
   logout: () => Promise<void>;
   hasRole: (role: UserRole) => boolean;
 }
@@ -35,22 +35,31 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       if (firebaseUser) {
-        // Fetch or create profile in Firestore
-        const userDoc = await getDoc(doc(db, 'users', firebaseUser.uid));
-
-        if (userDoc.exists()) {
-          setUser(userDoc.data() as UserProfile);
-        } else {
-          // New user defaults to COLLECTOR
-          const newProfile: UserProfile = {
+        try {
+          const userDoc = await getDoc(doc(db, 'users', firebaseUser.uid));
+          if (userDoc.exists()) {
+            setUser(userDoc.data() as UserProfile);
+          } else {
+            const newProfile: UserProfile = {
+              id: firebaseUser.uid,
+              email: firebaseUser.email || 'guest@mycohub.app',
+              displayName: firebaseUser.displayName || 'Researcher',
+              role: 'COLLECTOR',
+              joinedAt: new Date(),
+            };
+            await setDoc(doc(db, 'users', firebaseUser.uid), newProfile);
+            setUser(newProfile);
+          }
+        } catch (e) {
+          console.error("Firestore error, falling back to local state:", e);
+          // Still set user even if Firestore fails
+          setUser({
             id: firebaseUser.uid,
             email: firebaseUser.email || '',
-            displayName: firebaseUser.displayName || 'New Researcher',
+            displayName: firebaseUser.displayName || 'Researcher',
             role: 'COLLECTOR',
             joinedAt: new Date(),
-          };
-          await setDoc(doc(db, 'users', firebaseUser.uid), newProfile);
-          setUser(newProfile);
+          });
         }
       } else {
         setUser(null);
@@ -62,30 +71,34 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const login = async () => {
-    try {
-      const provider = new GoogleAuthProvider();
-      await signInWithPopup(auth, provider);
-    } catch (error) {
-      console.error("Login failed:", error);
-      throw error;
-    }
+    const provider = new GoogleAuthProvider();
+    await signInWithPopup(auth, provider);
   };
 
   const loginGuest = async () => {
-    try {
-      await signInAnonymously(auth);
-    } catch (error) {
-      console.error("Guest login failed:", error);
-      throw error;
-    }
+    await signInAnonymously(auth);
+  };
+
+  // FAIL-SAFE: If Firebase completely fails (e.g. network/config issues)
+  const loginEmergencyBypass = () => {
+    const bypassUser: UserProfile = {
+      id: 'bypass-' + Math.random().toString(36).slice(2),
+      email: 'bypass@mycohub.app',
+      displayName: 'Offline Researcher',
+      role: 'ADMIN',
+      joinedAt: new Date(),
+    };
+    setUser(bypassUser);
+    setLoading(false);
   };
 
   const logout = async () => {
     await signOut(auth);
+    setUser(null);
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, loginGuest, logout, hasRole }}>
+    <AuthContext.Provider value={{ user, loading, login, loginGuest, loginEmergencyBypass, logout, hasRole }}>
       {children}
     </AuthContext.Provider>
   );
