@@ -1,11 +1,12 @@
 import React from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { motion } from 'framer-motion';
-import { LogIn } from 'lucide-react';
+import { LogIn, UserCircle } from 'lucide-react';
 import { Navigate } from 'react-router-dom';
 
 const LoginPage: React.FC = () => {
-  const { user, login, loading } = useAuth();
+  const { user, login, loginGuest, loading } = useAuth();
+  const [isLoggingIn, setIsLoggingIn] = React.useState(false);
 
   if (loading) {
     return (
@@ -19,6 +20,22 @@ const LoginPage: React.FC = () => {
   if (user) {
     return <Navigate to="/" replace />;
   }
+
+  const handleLogin = async (type: 'google' | 'guest') => {
+    setIsLoggingIn(true);
+    try {
+      if (type === 'google') {
+        await login();
+      } else {
+        await loginGuest();
+      }
+    } catch (error) {
+      console.error("Login attempt failed:", error);
+      alert("Login failed. Please check your connection or Firebase project settings (ensure Google/Anonymous auth is enabled).");
+    } finally {
+      setIsLoggingIn(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-emerald-50/30 flex flex-col items-center justify-center p-6 font-sans">
@@ -37,15 +54,30 @@ const LoginPage: React.FC = () => {
 
         <div className="bg-white p-8 rounded-[2.5rem] shadow-xl shadow-emerald-900/5 border border-gray-100">
           <h2 className="text-xl font-black text-gray-800 mb-6 text-center">Research Portal</h2>
-          <motion.button
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            onClick={() => login()}
-            className="w-full bg-emerald-600 text-white p-4 rounded-3xl flex items-center justify-center gap-3 shadow-lg shadow-emerald-600/30 group"
-          >
-            <LogIn className="w-5 h-5 transition-transform group-hover:translate-x-1" />
-            <span className="font-black text-xs uppercase tracking-widest">Sign in with Google</span>
-          </motion.button>
+
+          <div className="space-y-4">
+            <motion.button
+              disabled={isLoggingIn}
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={() => handleLogin('google')}
+              className="w-full bg-emerald-600 text-white p-4 rounded-3xl flex items-center justify-center gap-3 shadow-lg shadow-emerald-600/30 group disabled:opacity-50"
+            >
+              <LogIn className="w-5 h-5 transition-transform group-hover:translate-x-1" />
+              <span className="font-black text-xs uppercase tracking-widest">
+                {isLoggingIn ? 'Connecting...' : 'Sign in with Google'}
+              </span>
+            </motion.button>
+
+            <button
+              disabled={isLoggingIn}
+              onClick={() => handleLogin('guest')}
+              className="w-full bg-white border-2 border-emerald-100 text-emerald-600 p-4 rounded-3xl font-black text-xs uppercase tracking-widest hover:bg-emerald-50 transition-colors disabled:opacity-50 flex items-center justify-center gap-3"
+            >
+              <UserCircle className="w-5 h-5" />
+              <span>{isLoggingIn ? 'Please wait...' : 'Continue as Guest'}</span>
+            </button>
+          </div>
 
           <div className="mt-8 pt-8 border-t border-gray-50 text-center">
             <p className="text-[10px] font-bold text-gray-300 uppercase tracking-widest leading-loose">

@@ -4,6 +4,7 @@ import {
   signInWithPopup,
   GoogleAuthProvider,
   signOut,
+  signInAnonymously,
   type User
 } from 'firebase/auth';
 import { auth, db } from '../firebase/config';
@@ -14,6 +15,7 @@ interface AuthContextType {
   user: UserProfile | null;
   loading: boolean;
   login: () => Promise<void>;
+  loginGuest: () => Promise<void>;
   logout: () => Promise<void>;
   hasRole: (role: UserRole) => boolean;
 }
@@ -60,8 +62,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const login = async () => {
-    const provider = new GoogleAuthProvider();
-    await signInWithPopup(auth, provider);
+    try {
+      const provider = new GoogleAuthProvider();
+      await signInWithPopup(auth, provider);
+    } catch (error) {
+      console.error("Login failed:", error);
+      throw error;
+    }
+  };
+
+  const loginGuest = async () => {
+    try {
+      await signInAnonymously(auth);
+    } catch (error) {
+      console.error("Guest login failed:", error);
+      throw error;
+    }
   };
 
   const logout = async () => {
@@ -69,7 +85,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, logout, hasRole }}>
+    <AuthContext.Provider value={{ user, loading, login, loginGuest, logout, hasRole }}>
       {children}
     </AuthContext.Provider>
   );
