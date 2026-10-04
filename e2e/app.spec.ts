@@ -62,13 +62,14 @@ test('dashboard and lab metrics reflect saved records', async ({ page }) => {
   await expect(page.getByText("Pielou Evenness J′").locator('..')).toContainText('1.00');
 });
 
-test('collectors can flag but not confirm identifications', async ({ page }) => {
+test('one vote per person: agreeing with your own record does not verify it', async ({ page }) => {
   await enterOffline(page);
   await saveRecord(page, { number: 'R-1', name: 'Boletus edulis' });
   await page.goto('./#/community');
-  await expect(page.getByRole('button', { name: 'Confirm ID' })).toBeDisabled();
-  await page.getByRole('button', { name: 'Flag', exact: true }).click();
-  await expect(page.getByRole('button', { name: 'Unflag' })).toBeVisible();
+  await page.getByRole('button', { name: 'Agree', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'Agreed' })).toBeDisabled();
+  await expect(page.getByText('1 vote', { exact: true })).toBeVisible();
+  await expect(page.getByText('Needs ID').last()).toBeVisible();
 });
 
 test('species search and safety-first assistant', async ({ page }) => {
@@ -94,8 +95,9 @@ test('Darwin Core CSV export', async ({ page }) => {
   ]);
   const fs = await import('node:fs');
   const csv = fs.readFileSync((await download.path())!, 'utf8');
-  expect(csv.split('\n')[0]).toContain('scientificName,kingdom');
-  expect(csv).toContain('Pleurotus ostreatus,Fungi');
+  const header = csv.split('\n')[0].split(',');
+  expect(header).toEqual(expect.arrayContaining(['scientificName', 'taxonID', 'family', 'coordinateUncertaintyInMeters', 'occurrenceRemarks']));
+  expect(csv).toContain('Pleurotus ostreatus,');
   expect(csv).toContain('"Oak log, plot 3",51.5,-0.12,WGS84');
 });
 

@@ -41,7 +41,8 @@ export default defineConfig(({ mode }) => {
           ? { inlineDynamicImports: true }
           : {
               manualChunks: {
-                firebase: ['firebase/app', 'firebase/auth', 'firebase/firestore', 'firebase/storage'],
+                'firebase-firestore': ['firebase/firestore'],
+                'firebase-core': ['firebase/app', 'firebase/auth', 'firebase/storage'],
                 vendor: ['react', 'react-dom', 'react-router-dom', 'framer-motion', 'dexie'],
               },
             },

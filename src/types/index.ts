@@ -15,153 +15,7 @@ export interface UserProfile {
 export type TrophicMode = 'SAPROTROPHIC' | 'ECTOMYCORRHIZAL' | 'PARASITIC' | 'ENDOPHYTIC' | 'LICHENIZED';
 export type SubstrateType = 'DEAD_WOOD' | 'LIVING_WOOD' | 'SOIL' | 'DUNG' | 'LITTER' | 'OTHER_FUNGUS' | 'INVERTEBRATE';
 export type HabitatType = 'BROADLEAF_WOODLAND' | 'CONIFEROUS_FOREST' | 'GRASSLAND' | 'HEATH' | 'WETLAND' | 'URBAN';
-export type AbundanceEstimate = 'SINGLE' | 'SCATTERED' | 'GREGARIOUS' | 'CLUSTERED';
-export type PhenologyStage = 'IMMATURE' | 'MATURE' | 'SENESCENT';
-export type PreservationMethod = 'AIR_DRIED' | 'LYOPHILIZED' | 'ALCOHOL' | 'FROZEN';
 export type VerificationStatus = 'UNVERIFIED' | 'COMMUNITY_GRADE' | 'RESEARCH_GRADE' | 'FLAGGED';
-
-export interface VerificationLogEntry {
-  id: string;
-  userId: string;
-  userName: string;
-  userRole: UserRole;
-  timestamp: Date;
-  suggestedSpeciesId?: string;
-  suggestedName?: string;
-  confidence: 'CERTAIN' | 'PROBABLE' | 'POSSIBLE' | 'GENUS_ONLY';
-  comment?: string;
-  isAgreed: boolean;
-}
-
-export interface Observation {
-  id: string;
-  userId: string;
-  collectorName: string;
-  collectionNumber: string; // Unique per collector
-  timestamp: Date;
-  status: VerificationStatus;
-
-  // Geospatial (DwC compliant)
-  location: {
-    latitude: number;
-    longitude: number;
-    altitudeMetres: number;
-    localityDescription: string;
-    country: string;
-    region: string;
-    siteName: string;
-  };
-
-  // Taxonomy
-  taxonomy: {
-    kingdom: string;
-    phylum: string;
-    class: string;
-    order: string;
-    family: string;
-    genus: string;
-    species: string;
-    authorCitation?: string;
-    infraspecificRank?: string;
-    identificationConfidence: 'CERTAIN' | 'PROBABLE' | 'POSSIBLE' | 'GENUS_ONLY';
-  };
-
-  // Morphology - The bulk
-  morphology: {
-    pileus: {
-      diameterRangeMm: [number, number];
-      shape: string; // convex/umbonate/etc
-      color: string; // Munsell/Kornerup
-      texture: string;
-      margin: string;
-    };
-    hymenium: {
-      type: 'GILLS' | 'PORES' | 'TEETH' | 'SPINES' | 'SMOOTH' | 'RIDGED';
-      color: string;
-      spacing: 'CROWDED' | 'CLOSE' | 'SUBDISTANT' | 'DISTANT';
-      attachment: string;
-    };
-    stipe: {
-      present: boolean;
-      dimensionsMm: { height: number; diameter: number };
-      shape: string;
-      texture: string;
-      color: string;
-      fleshConsistency: 'HOLLOW' | 'STUFFED' | 'SOLID';
-      baseMorphology: string;
-    };
-    flesh: {
-      colorAtCut: string;
-      bruisingReaction: {
-        color: string;
-        timing: 'IMMEDIATE' | 'DELAYED' | 'NONE';
-      };
-      texture: string;
-      odor: string;
-      taste: string; // Includes safety disclaimer
-    };
-    sporePrintColor: string;
-    chemicalTests: {
-      koh?: string;
-      feso4?: string;
-      melzers: 'AMYLOID' | 'DEXTRINOID' | 'INAMYLOID' | 'NONE';
-      ammonia?: string;
-      phenol?: string;
-    };
-  };
-
-  // Microscopy
-  microscopy?: {
-    spores: {
-      dimensionsUm: { length: number; width: number };
-      ornamentation: string;
-      wallThickness: string;
-      colorInWater?: string;
-      colorInKoh?: string;
-      colorInMelzers?: string;
-    };
-    basidia: {
-      dimensionsUm: { length: number; width: number };
-      sterigmataCount: number;
-    };
-    cystidia?: string;
-    clampConnections: 'PRESENT' | 'ABSENT' | 'RARE';
-    pileipellisStructure: string;
-  };
-
-  // Ecology
-  ecology: {
-    trophicMode: TrophicMode;
-    substrate: SubstrateType;
-    substrateDetail?: string;
-    hostSpecies?: string;
-    habitatType: HabitatType;
-    associatedPlants?: string[];
-    abundance: AbundanceEstimate;
-    phenology: PhenologyStage;
-  };
-
-  // Voucher
-  voucher: {
-    preserved: boolean;
-    method?: PreservationMethod;
-    herbariumCode?: string; // e.g. K, NY
-    accessionNumber?: string;
-    dnaExtracted: boolean;
-    genbankAccession?: string;
-    uniteMatch?: string;
-  };
-
-  media: {
-    url: string;
-    type: 'HABITAT' | 'PILEUS_TOP' | 'HYMENIUM' | 'STIPE' | 'CROSS_SECTION' | 'SPORE_PRINT' | 'SCALE_BAR' | 'MICROSCOPY';
-    exifData?: Record<string, unknown>;
-  }[];
-
-  verificationLog: VerificationLogEntry[];
-  isPoisonous?: boolean; // Triggers UI safety layer
-}
-
 export interface Species {
   id: string;
   scientificName: string;
@@ -185,26 +39,59 @@ export interface Species {
 
 export type IdentificationConfidence = 'CERTAIN' | 'PROBABLE' | 'POSSIBLE' | 'GENUS_ONLY';
 
+export type MelzersReaction = 'AMYLOID' | 'DEXTRINOID' | 'INAMYLOID' | 'NOT_TESTED';
+export type ClampConnections = 'PRESENT' | 'ABSENT' | 'RARE' | 'NOT_SEEN';
+
+/** Result of matching a name against the GBIF Backbone Taxonomy. */
+export interface TaxonMatch {
+  taxonKey: number;
+  matchedName: string;        // scientific name with authorship, as GBIF returns it
+  acceptedName: string;       // accepted name (differs from matchedName for synonyms)
+  rank: string;
+  status: string;             // ACCEPTED, SYNONYM, DOUBTFUL…
+  matchType: 'EXACT' | 'FUZZY' | 'HIGHERRANK';
+  confidence: number;
+  kingdom?: string;
+  phylum?: string;
+  class?: string;
+  order?: string;
+  family?: string;
+  genus?: string;
+}
+
+/** One person's identification of a record. Each user has at most one. */
+export interface Identification {
+  userId: string;
+  userName: string;
+  role: UserRole;
+  taxon: string;
+  comment?: string;
+  createdAt: string;          // ISO 8601
+  pending?: boolean;          // not yet sent to the server
+}
+
 /**
- * The subset of a Darwin Core occurrence that the field entry form captures.
- * Stored locally first (IndexedDB) and synced to Firestore when possible.
+ * A field record: the Darwin Core occurrence the entry form captures plus
+ * sync bookkeeping. Stored locally first (IndexedDB), synced to Firestore.
  */
 export interface FieldRecord {
-  id: string;
+  id: string;                 // local ID, also the Storage folder name
   userId: string;
   collectorName: string;
   collectionNumber: string;
-  timestamp: string; // ISO 8601 (DwC eventDate)
+  timestamp: string;          // ISO 8601 (DwC eventDate)
   status: VerificationStatus;
-  synced: boolean;
-  remoteId?: string;
+  consensusTaxon?: string;
 
   locality: string;
-  latitude: number | null; // decimal degrees, WGS84
+  latitude: number | null;    // decimal degrees, WGS84
   longitude: number | null;
+  coordinateUncertaintyInMeters: number | null;
 
   scientificName: string;
   identificationConfidence: IdentificationConfidence;
+  taxonomy?: TaxonMatch;
+  identifications: Identification[];
 
   capDiameterMm: string;
   capShape: string;
@@ -219,6 +106,11 @@ export interface FieldRecord {
   feso4: string;
   taste: string;
 
+  sporePrintColor: string;
+  sporeMeasurements: string;  // raw "L x W" pairs in µm
+  melzers: MelzersReaction;
+  clampConnections: ClampConnections;
+
   trophicMode: TrophicMode;
   substrate: SubstrateType;
   hostSpecies: string;
@@ -231,4 +123,22 @@ export interface FieldRecord {
 
   photos: Blob[];
   mediaUrls: string[];
+
+  // Sync bookkeeping
+  updatedAt: string;          // ISO 8601, local edit time
+  synced: boolean;            // has a server copy
+  remoteId?: string;
+  dirty: boolean;             // content changed since last push
+  statusDirty: boolean;       // manual status change waiting to push
+  syncAttempts: number;
+  nextSyncAt: number;         // epoch ms; earliest next retry
+  syncError?: string;
+}
+
+/** A server copy to delete once we're online. */
+export interface PendingDeletion {
+  remoteId: string;
+  userId: string;
+  localId: string;
+  photoCount: number;
 }

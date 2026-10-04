@@ -21,7 +21,7 @@ const LoginPage: React.FC = () => {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50 flex-col gap-4">
         <div className="animate-spin rounded-full h-12 w-12 border-4 border-emerald-600 border-t-transparent shadow-md"></div>
-        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest animate-pulse">Initializing Lab...</p>
+        <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest animate-pulse">Initializing Lab...</p>
       </div>
     );
   }
@@ -82,7 +82,7 @@ const LoginPage: React.FC = () => {
 
             <div className="relative py-4 flex items-center gap-4">
                 <div className="h-px bg-gray-100 flex-1" />
-                <span className="text-[8px] font-black text-gray-300 uppercase tracking-widest">No connection?</span>
+                <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest">No connection?</span>
                 <div className="h-px bg-gray-100 flex-1" />
             </div>
 
@@ -103,14 +103,14 @@ const LoginPage: React.FC = () => {
 
           <div className="mt-6 flex items-center gap-2 text-rose-500 bg-rose-50 p-4 rounded-2xl">
             <ShieldAlert className="w-4 h-4 flex-shrink-0" />
-            <p className="text-[8px] font-bold uppercase tracking-wider leading-tight">
+            <p className="text-[10px] font-bold uppercase tracking-wider leading-tight">
               Cloud sync needs a signed-in account.
               Offline records are stored on this device only.
             </p>
           </div>
         </div>
 
-        <p className="mt-8 text-center text-[8px] font-black text-gray-300 uppercase tracking-[0.2em]">
+        <p className="mt-8 text-center text-[10px] font-black text-gray-500 uppercase tracking-[0.2em]">
           v1.0.0-Alpha • Darwin Core terms
         </p>
       </motion.div>

@@ -1,11 +1,21 @@
-import React, { useState } from 'react';
-import { Camera, MapPin, Beaker, Microscope, Tag, Save, TreeDeciduous, Database, Layers, X, CheckCircle2, AlertTriangle } from 'lucide-react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
+import {
+  Camera, MapPin, Beaker, Microscope, Tag, Save, TreeDeciduous, Database, X, CheckCircle2, AlertTriangle,
+  Search, Loader2, ImagePlus,
+} from 'lucide-react';
 import { motion } from 'framer-motion';
 import type { LucideIcon } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
-import { saveObservation } from '../../utils/observations';
-import type { HabitatType, IdentificationConfidence, SubstrateType, TrophicMode } from '../../types';
-import { emptyForm, parseCoord, validate, type Errors, type FormState } from '../../utils/fieldForm';
+import { saveObservation, updateObservation, useLocalRecord } from '../../utils/observations';
+import { emptyForm, formToFields, recordToForm, validate, type Errors, type FormState } from '../../utils/fieldForm';
+import { canonicalName, matchName, type MatchOutcome } from '../../utils/gbif';
+import { formatSporeStats, parseSporeMeasurements, sporeStats } from '../../utils/microscopy';
+import { compressImage } from '../../utils/images';
+import { getCurrentFix, isNative, takeNativePhoto } from '../../utils/native';
+import type {
+  ClampConnections, HabitatType, IdentificationConfidence, MelzersReaction, SubstrateType, TaxonMatch, TrophicMode,
+} from '../../types';
 
 // Tailwind only ships classes it can see in full, so section colors are listed explicitly.
 const sectionColors = {
@@ -15,6 +25,7 @@ const sectionColors = {
   rose: 'bg-rose-50 text-rose-600',
   teal: 'bg-teal-50 text-teal-600',
   indigo: 'bg-indigo-50 text-indigo-600',
+  violet: 'bg-violet-50 text-violet-600',
 } as const;
 
 const FormSection: React.FC<{ title: string; icon: LucideIcon; color?: keyof typeof sectionColors; children: React.ReactNode }> = ({ title, icon: Icon, children, color = 'emerald' }) => (
@@ -29,7 +40,8 @@ const FormSection: React.FC<{ title: string; icon: LucideIcon; color?: keyof typ
   </div>
 );
 
-const fieldClass = 'w-full bg-gray-50 border-none rounded-2xl px-4 py-3 text-sm font-medium text-gray-800 placeholder:text-gray-300 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 transition-all shadow-inner';
+const fieldClass = 'w-full bg-gray-50 border-none rounded-2xl px-4 py-3 text-sm font-medium text-gray-800 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 transition-all shadow-inner';
+const labelClass = 'block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1.5 ml-1';
 
 const Input: React.FC<{
   id: string;
@@ -41,9 +53,10 @@ const Input: React.FC<{
   inputMode?: React.HTMLAttributes<HTMLInputElement>['inputMode'];
   error?: string;
   required?: boolean;
-}> = ({ id, label, placeholder, value, onChange, type = 'text', inputMode, error, required }) => (
+  hint?: string;
+}> = ({ id, label, placeholder, value, onChange, type = 'text', inputMode, error, required, hint }) => (
   <div className="mb-5 last:mb-0 min-w-0">
-    <label htmlFor={id} className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 ml-1">
+    <label htmlFor={id} className={labelClass}>
       {label}{required && <span className="text-rose-500"> *</span>}
     </label>
     <input
@@ -54,9 +67,11 @@ const Input: React.FC<{
       value={value}
       onChange={(e) => onChange(e.target.value)}
       aria-invalid={!!error}
+      aria-describedby={error ? `${id}-error` : hint ? `${id}-hint` : undefined}
       className={`${fieldClass} ${error ? 'ring-2 ring-rose-400/60' : ''}`}
     />
-    {error && <p className="text-[10px] font-bold text-rose-600 mt-1 ml-1">{error}</p>}
+    {error && <p id={`${id}-error`} className="text-[11px] font-bold text-rose-600 mt-1 ml-1">{error}</p>}
+    {!error && hint && <p id={`${id}-hint`} className="text-[11px] font-medium text-gray-500 mt-1 ml-1">{hint}</p>}
   </div>
 );
 
@@ -69,7 +84,7 @@ function Select<T extends string>({ id, label, options, value, onChange }: {
 }) {
   return (
     <div className="mb-5 last:mb-0">
-      <label htmlFor={id} className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 ml-1">{label}</label>
+      <label htmlFor={id} className={labelClass}>{label}</label>
       <select
         id={id}
         value={value}
@@ -87,48 +102,172 @@ const opts = <T extends string>(pairs: [T, string][]) => pairs.map(([value, labe
 const CONFIDENCE = opts<IdentificationConfidence>([['CERTAIN', 'Certain'], ['PROBABLE', 'Probable'], ['POSSIBLE', 'Possible'], ['GENUS_ONLY', 'Genus only']]);
 const HYMENIUM = opts([['Gills', 'Gills (lamellae)'], ['Pores', 'Pores (tubes)'], ['Teeth', 'Teeth / spines'], ['Smooth', 'Smooth'], ['Ridged', 'Ridged / false gills']]);
 const SPACING = opts([['Crowded', 'Crowded'], ['Close', 'Close'], ['Subdistant', 'Subdistant'], ['Distant', 'Distant'], ['N/A', 'Not applicable']]);
+const MELZERS = opts<MelzersReaction>([['NOT_TESTED', 'Not tested'], ['AMYLOID', 'Amyloid (blue-black)'], ['DEXTRINOID', 'Dextrinoid (red-brown)'], ['INAMYLOID', 'Inamyloid (no reaction)']]);
+const CLAMPS = opts<ClampConnections>([['NOT_SEEN', 'Not examined'], ['PRESENT', 'Present'], ['RARE', 'Rare'], ['ABSENT', 'Absent']]);
 const TROPHIC = opts<TrophicMode>([['SAPROTROPHIC', 'Saprotrophic'], ['ECTOMYCORRHIZAL', 'Ectomycorrhizal'], ['PARASITIC', 'Parasitic'], ['ENDOPHYTIC', 'Endophytic'], ['LICHENIZED', 'Lichenized']]);
 const SUBSTRATE = opts<SubstrateType>([['DEAD_WOOD', 'Dead wood'], ['LIVING_WOOD', 'Living wood'], ['SOIL', 'Soil'], ['LITTER', 'Leaf / needle litter'], ['DUNG', 'Dung'], ['OTHER_FUNGUS', 'Other fungus'], ['INVERTEBRATE', 'Invertebrate']]);
 const HABITAT = opts<HabitatType>([['BROADLEAF_WOODLAND', 'Broadleaf woodland'], ['CONIFEROUS_FOREST', 'Coniferous forest'], ['GRASSLAND', 'Grassland'], ['HEATH', 'Heath'], ['WETLAND', 'Wetland'], ['URBAN', 'Urban / parkland']]);
 
+interface Photo {
+  key: string;
+  blob: Blob;
+  name: string;
+}
+
+const PhotoThumb: React.FC<{ photo: Photo; onRemove: () => void }> = ({ photo, onRemove }) => {
+  const [url, setUrl] = useState<string>();
+  useEffect(() => {
+    const u = URL.createObjectURL(photo.blob);
+    setUrl(u);
+    return () => URL.revokeObjectURL(u);
+  }, [photo.blob]);
+  return (
+    <li className="relative aspect-square rounded-2xl overflow-hidden bg-gray-100">
+      {url && <img src={url} alt={photo.name} className="w-full h-full object-cover" />}
+      <button
+        type="button"
+        onClick={onRemove}
+        aria-label={`Remove ${photo.name}`}
+        className="absolute top-1.5 right-1.5 bg-black/60 text-white rounded-full p-1"
+      >
+        <X className="w-3.5 h-3.5" />
+      </button>
+    </li>
+  );
+};
+
+/** GBIF name-check result with an action to adopt the suggested name. */
+const NameCheck: React.FC<{ outcome: MatchOutcome; onUse: (name: string) => void }> = ({ outcome, onUse }) => {
+  if (outcome.kind === 'error') return <p className="text-xs font-bold text-amber-700 bg-amber-50 rounded-2xl p-3">{outcome.message}</p>;
+  if (outcome.kind === 'none') return <p className="text-xs font-bold text-amber-700 bg-amber-50 rounded-2xl p-3">No match in the GBIF Backbone Taxonomy. Check the spelling, or record it as entered.</p>;
+  if (outcome.kind === 'not-fungus') return <p className="text-xs font-bold text-rose-700 bg-rose-50 rounded-2xl p-3">GBIF matched this name in kingdom {outcome.kingdom}, not Fungi.</p>;
+
+  const m = outcome.match;
+  const accepted = canonicalName(m.acceptedName, m.rank);
+  const matched = canonicalName(m.matchedName, m.rank);
+  const classification = [m.phylum, m.class, m.order, m.family].filter(Boolean).join(' › ');
+
+  let message: React.ReactNode;
+  let suggest: string | null = null;
+  if (m.matchType === 'HIGHERRANK') {
+    message = <>Only matched at {m.rank.toLowerCase()} level: <i>{m.matchedName}</i>.</>;
+  } else if (m.status === 'SYNONYM' || m.status.endsWith('SYNONYM')) {
+    message = <><i>{m.matchedName}</i> is a synonym. Accepted name: <i>{m.acceptedName}</i>.</>;
+    suggest = accepted;
+  } else if (m.matchType === 'FUZZY') {
+    message = <>No exact match. Closest name: <i>{m.matchedName}</i> ({m.confidence}% confidence).</>;
+    suggest = matched;
+  } else {
+    message = <>Accepted name: <i>{m.matchedName}</i>.</>;
+  }
+
+  return (
+    <div className="text-xs font-bold text-emerald-800 bg-emerald-50 rounded-2xl p-3 space-y-1.5">
+      <p className="flex items-start gap-2"><CheckCircle2 className="w-4 h-4 flex-shrink-0" /><span>{message}</span></p>
+      {classification && <p className="text-[11px] font-medium text-emerald-700 ml-6">{classification}</p>}
+      {suggest && (
+        <button type="button" onClick={() => onUse(suggest!)} className="ml-6 underline decoration-dotted">
+          Use “{suggest}”
+        </button>
+      )}
+    </div>
+  );
+};
+
+let photoCounter = 0;
+const toPhoto = (blob: Blob, name: string): Photo => ({ key: `p${++photoCounter}`, blob, name });
+
 const FieldEntryPage: React.FC = () => {
+  const { id: editId } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const { user } = useAuth();
+  const existing = useLocalRecord(editId);
+  const isEdit = !!editId;
+
   const [form, setForm] = useState<FormState>(() => emptyForm(user?.displayName ?? ''));
-  const [photos, setPhotos] = useState<File[]>([]);
+  const [photos, setPhotos] = useState<Photo[]>([]);
+  const [taxonomy, setTaxonomy] = useState<TaxonMatch | undefined>();
+  const [nameCheck, setNameCheck] = useState<MatchOutcome | null>(null);
+  const [checkingName, setCheckingName] = useState(false);
   const [errors, setErrors] = useState<Errors>({});
   const [saving, setSaving] = useState(false);
   const [locating, setLocating] = useState(false);
+  const [processingPhotos, setProcessingPhotos] = useState(false);
   const [notice, setNotice] = useState<{ kind: 'ok' | 'warn' | 'error'; text: string } | null>(null);
+  const [loadedId, setLoadedId] = useState<string | null>(null);
+
+  // Load the record once when editing.
+  if (isEdit && existing && loadedId !== existing.id) {
+    setLoadedId(existing.id);
+    setForm(recordToForm(existing));
+    setPhotos(existing.photos.map((b, i) => toPhoto(b, `Photo ${i + 1}`)));
+    setTaxonomy(existing.taxonomy);
+  }
+
+  const spores = useMemo(() => {
+    const { spores } = parseSporeMeasurements(form.sporeMeasurements);
+    return sporeStats(spores);
+  }, [form.sporeMeasurements]);
+
+  if (isEdit && existing === null) {
+    return <p className="bg-white p-6 rounded-[2rem] text-sm font-bold text-gray-600">This record no longer exists on this device.</p>;
+  }
+  if (isEdit && existing && user && existing.userId !== user.id && !existing.userId.startsWith('local-')) {
+    return <p className="bg-white p-6 rounded-[2rem] text-sm font-bold text-gray-600">Only the collector who made this record can edit it. You can add an identification from the record page.</p>;
+  }
 
   const set = <K extends keyof FormState>(key: K) => (value: FormState[K]) => {
     setForm((prev) => ({ ...prev, [key]: value }));
     if (errors[key]) setErrors((prev) => ({ ...prev, [key]: undefined }));
-  };
-
-  const fillCurrentLocation = () => {
-    if (!('geolocation' in navigator)) {
-      setNotice({ kind: 'error', text: 'This device does not provide location. Enter coordinates by hand.' });
-      return;
+    if (key === 'scientificName') {
+      setNameCheck(null);
+      setTaxonomy(undefined);
     }
-    setLocating(true);
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        setForm((prev) => ({
-          ...prev,
-          latitude: pos.coords.latitude.toFixed(5),
-          longitude: pos.coords.longitude.toFixed(5),
-        }));
-        setLocating(false);
-      },
-      () => {
-        setNotice({ kind: 'error', text: 'Location permission was denied or unavailable. Enter coordinates by hand.' });
-        setLocating(false);
-      },
-      { enableHighAccuracy: true, timeout: 15000 },
-    );
   };
 
-  const handlePublish = async () => {
+  const fillCurrentLocation = async () => {
+    setLocating(true);
+    try {
+      const fix = await getCurrentFix();
+      setForm((prev) => ({
+        ...prev,
+        latitude: fix.latitude.toFixed(6),
+        longitude: fix.longitude.toFixed(6),
+        coordinateUncertainty: String(fix.accuracy),
+      }));
+      setErrors((prev) => ({ ...prev, latitude: undefined, longitude: undefined, coordinateUncertainty: undefined }));
+    } catch (e) {
+      setNotice({ kind: 'error', text: e instanceof Error ? e.message : 'Location unavailable.' });
+    } finally {
+      setLocating(false);
+    }
+  };
+
+  const checkName = async () => {
+    setCheckingName(true);
+    const outcome = await matchName(form.scientificName);
+    setNameCheck(outcome);
+    setTaxonomy(outcome.kind === 'match' ? outcome.match : undefined);
+    setCheckingName(false);
+  };
+
+  const addPhotos = async (files: Blob[], names: string[]) => {
+    setProcessingPhotos(true);
+    const compressed = await Promise.all(files.map(compressImage));
+    setPhotos((prev) => [...prev, ...compressed.map((b, i) => toPhoto(b, names[i]))]);
+    setProcessingPhotos(false);
+  };
+
+  const takePhoto = async () => {
+    try {
+      const file = await takeNativePhoto();
+      if (file) await addPhotos([file], [file.name]);
+    } catch (e) {
+      setNotice({ kind: 'error', text: e instanceof Error ? e.message : 'Camera unavailable.' });
+    }
+  };
+
+  const handleSave = async () => {
     const found = validate(form);
     setErrors(found);
     if (Object.keys(found).length > 0) {
@@ -141,40 +280,44 @@ const FieldEntryPage: React.FC = () => {
     setSaving(true);
     setNotice(null);
     try {
-      const { eventDate, latitude, longitude, ...rest } = form;
-      const { synced } = await saveObservation({
-        ...rest,
-        userId: user.id,
-        timestamp: new Date(eventDate + 'T12:00:00').toISOString(),
-        latitude: parseCoord(latitude, 90) ?? null,
-        longitude: parseCoord(longitude, 180) ?? null,
-        photos,
-      });
+      const fields = { ...formToFields(form), taxonomy, photos: photos.map((p) => p.blob) };
+      if (isEdit && existing) {
+        await updateObservation(existing.id, fields);
+        navigate(`/record/${existing.id}`);
+        return;
+      }
+      const { synced } = await saveObservation({ ...fields, userId: user.id });
       setNotice(synced
         ? { kind: 'ok', text: `Saved ${form.collectionNumber} and synced to the cloud.` }
-        : { kind: 'warn', text: `Saved ${form.collectionNumber} on this device. It has not been synced to the cloud.` });
+        : { kind: 'warn', text: `Saved ${form.collectionNumber} on this device. It will sync automatically when you're signed in and online.` });
       setForm(emptyForm(form.collectorName));
       setPhotos([]);
+      setTaxonomy(undefined);
+      setNameCheck(null);
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (e) {
       console.error(e);
-      setNotice({ kind: 'error', text: 'Could not save: local storage on this device is unavailable.' });
+      setNotice({ kind: 'error', text: 'Could not save: local storage on this device is unavailable or full.' });
     } finally {
       setSaving(false);
     }
   };
 
+  if (isEdit && existing === undefined) {
+    return <div className="flex justify-center p-12"><Loader2 className="w-6 h-6 animate-spin text-emerald-600" /></div>;
+  }
+
   return (
     <div className="pb-12 pt-4">
       <div className="flex justify-between items-end gap-4 mb-6 px-2">
         <div className="min-w-0">
-          <h2 className="text-3xl font-black text-gray-800 tracking-tighter leading-none">Scientific Record</h2>
-          <p className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em] mt-2">Darwin Core field terms</p>
+          <h2 className="text-3xl font-black text-gray-800 tracking-tighter leading-none">{isEdit ? 'Edit Record' : 'Scientific Record'}</h2>
+          <p className="text-[10px] font-bold text-gray-500 uppercase tracking-[0.2em] mt-2">Darwin Core field terms</p>
         </div>
         <motion.button
           whileTap={{ scale: 0.95 }}
-          onClick={handlePublish}
-          disabled={saving}
+          onClick={handleSave}
+          disabled={saving || processingPhotos}
           className="bg-emerald-600 disabled:opacity-60 text-white px-6 py-3 rounded-2xl flex items-center gap-2 shadow-xl shadow-emerald-600/30 flex-shrink-0"
         >
           <Save className="w-4 h-4" />
@@ -201,16 +344,26 @@ const FieldEntryPage: React.FC = () => {
           <Input id="collectionNumber" label="Collection # (recordNumber)" placeholder="JM-2026-04" value={form.collectionNumber} onChange={set('collectionNumber')} error={errors.collectionNumber} required />
         </div>
         <Input id="eventDate" label="Date collected (eventDate)" type="date" value={form.eventDate} onChange={set('eventDate')} error={errors.eventDate} required />
-        <Input id="locality" label="Site / Locality" placeholder="Black Rock Forest, NY" value={form.locality} onChange={set('locality')} />
+        <Input id="locality" label="Site / Locality" placeholder="Black Rock Forest, NY" value={form.locality} onChange={set('locality')} hint="Use the same site name on every visit; Research Lab groups records by it." />
         <div className="grid grid-cols-2 gap-4">
           <Input id="latitude" label="Latitude (WGS84)" placeholder="41.378" inputMode="decimal" value={form.latitude} onChange={set('latitude')} error={errors.latitude} />
           <Input id="longitude" label="Longitude (WGS84)" placeholder="-74.004" inputMode="decimal" value={form.longitude} onChange={set('longitude')} error={errors.longitude} />
         </div>
+        <Input
+          id="coordinateUncertainty"
+          label="Uncertainty (m)"
+          placeholder="e.g. 15"
+          inputMode="decimal"
+          value={form.coordinateUncertainty}
+          onChange={set('coordinateUncertainty')}
+          error={errors.coordinateUncertainty}
+          hint="coordinateUncertaintyInMeters: radius that contains the true location. Filled from GPS accuracy."
+        />
         <button
           type="button"
           onClick={fillCurrentLocation}
           disabled={locating}
-          className="w-full mt-1 bg-blue-50 text-blue-700 p-3 rounded-2xl flex items-center justify-center gap-2 text-[10px] font-black uppercase tracking-widest disabled:opacity-60"
+          className="w-full mt-1 bg-blue-50 text-blue-700 p-3 rounded-2xl flex items-center justify-center gap-2 text-[11px] font-black uppercase tracking-widest disabled:opacity-60"
         >
           <MapPin className="w-4 h-4" />
           {locating ? 'Locating…' : 'Use current location'}
@@ -218,22 +371,47 @@ const FieldEntryPage: React.FC = () => {
       </FormSection>
 
       <FormSection title="Taxonomy" icon={Tag}>
-        <div className="bg-emerald-50/50 p-4 rounded-2xl mb-4 flex items-center gap-3">
-          <Layers className="w-5 h-5 text-emerald-600 flex-shrink-0" />
-          <div className="flex-1 min-w-0">
-            <span className="block text-[10px] font-black text-emerald-700 uppercase tracking-widest">Naming</span>
-            <span className="text-xs font-bold text-emerald-600">Binomial with authority, e.g. Amanita muscaria (L.) Lam.</span>
-          </div>
-        </div>
         <Input id="scientificName" label="Scientific Name" placeholder="e.g. Amanita muscaria" value={form.scientificName} onChange={set('scientificName')} error={errors.scientificName} required />
+        <div className="-mt-2 mb-5 space-y-3">
+          <button
+            type="button"
+            onClick={checkName}
+            disabled={checkingName || !form.scientificName.trim()}
+            className="w-full bg-emerald-50 text-emerald-700 p-3 rounded-2xl flex items-center justify-center gap-2 text-[11px] font-black uppercase tracking-widest disabled:opacity-60"
+          >
+            {checkingName ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
+            Check name with GBIF
+          </button>
+          {nameCheck && (
+            <NameCheck
+              outcome={nameCheck}
+              onUse={(name) => {
+                setForm((prev) => ({ ...prev, scientificName: name }));
+                setNameCheck(null);
+                setTaxonomy(undefined);
+              }}
+            />
+          )}
+          {!nameCheck && taxonomy && (
+            <p className="text-[11px] font-bold text-emerald-700 bg-emerald-50 rounded-2xl p-3">
+              GBIF: {[taxonomy.order, taxonomy.family].filter(Boolean).join(' › ')} · taxonKey {taxonomy.taxonKey}
+            </p>
+          )}
+        </div>
         <Select id="identificationConfidence" label="Confidence Level" options={CONFIDENCE} value={form.identificationConfidence} onChange={set('identificationConfidence')} />
       </FormSection>
 
       <FormSection title="Photographs" icon={Camera} color="emerald">
-        <label htmlFor="photos" className="w-full bg-gray-50 border-2 border-dashed border-gray-200 rounded-2xl p-5 flex flex-col items-center gap-2 cursor-pointer text-gray-400">
-          <Camera className="w-6 h-6" />
-          <span className="text-[10px] font-black uppercase tracking-widest">Add photos (habitat, cap, hymenium, stipe)</span>
-        </label>
+        <div className="flex gap-2">
+          {isNative() && (
+            <button type="button" onClick={takePhoto} className="flex-1 bg-emerald-600 text-white p-4 rounded-2xl flex items-center justify-center gap-2 text-[11px] font-black uppercase tracking-widest">
+              <Camera className="w-4 h-4" /> Take photo
+            </button>
+          )}
+          <label htmlFor="photos" className="flex-1 bg-gray-50 border-2 border-dashed border-gray-200 rounded-2xl p-4 flex items-center justify-center gap-2 cursor-pointer text-gray-500 text-[11px] font-black uppercase tracking-widest">
+            <ImagePlus className="w-4 h-4" /> {isNative() ? 'Choose files' : 'Add photos'}
+          </label>
+        </div>
         <input
           id="photos"
           type="file"
@@ -243,19 +421,16 @@ const FieldEntryPage: React.FC = () => {
           className="sr-only"
           onChange={(e) => {
             const files = Array.from(e.target.files ?? []);
-            setPhotos((prev) => [...prev, ...files]);
             e.target.value = '';
+            void addPhotos(files, files.map((f) => f.name));
           }}
         />
+        <p className="text-[11px] font-medium text-gray-500 mt-3">Habitat, cap, hymenium, stipe and a scale bar. Photos are resized to 2048 px to save space.</p>
+        {processingPhotos && <p className="text-[11px] font-bold text-emerald-700 mt-2">Processing photos…</p>}
         {photos.length > 0 && (
-          <ul className="mt-4 space-y-2">
-            {photos.map((p, i) => (
-              <li key={`${p.name}-${i}`} className="flex items-center justify-between gap-2 bg-gray-50 rounded-xl px-3 py-2 text-xs font-bold text-gray-600">
-                <span className="truncate">{p.name}</span>
-                <button onClick={() => setPhotos((prev) => prev.filter((_, j) => j !== i))} aria-label={`Remove ${p.name}`}>
-                  <X className="w-4 h-4" />
-                </button>
-              </li>
+          <ul className="mt-4 grid grid-cols-3 gap-2">
+            {photos.map((p) => (
+              <PhotoThumb key={p.key} photo={p} onRemove={() => setPhotos((prev) => prev.filter((x) => x.key !== p.key))} />
             ))}
           </ul>
         )}
@@ -282,9 +457,34 @@ const FieldEntryPage: React.FC = () => {
         </div>
         <div className="bg-red-50 p-4 rounded-2xl mt-4">
           <span className="block text-[10px] font-black text-red-600 uppercase tracking-widest mb-1">Safety Advisory</span>
-          <p className="text-[10px] font-bold text-red-500 mb-3">Never taste a specimen that could be an Amanita, Galerina or other deadly genus. If tasting, chew a tiny piece and spit it out. Never swallow.</p>
+          <p className="text-[11px] font-bold text-red-600 mb-3">Never taste a specimen that could be an Amanita, Galerina or other deadly genus. If tasting, chew a tiny piece and spit it out. Never swallow.</p>
           <Input id="taste" label="Taste (scientific only)" placeholder="Mild, acrid…" value={form.taste} onChange={set('taste')} />
         </div>
+      </FormSection>
+
+      <FormSection title="Microscopy" icon={Microscope} color="violet">
+        <Input id="sporePrintColor" label="Spore Print Colour" placeholder="White, pink, rusty brown…" value={form.sporePrintColor} onChange={set('sporePrintColor')} />
+        <div className="mb-5">
+          <label htmlFor="sporeMeasurements" className={labelClass}>Spore measurements (µm, length × width)</label>
+          <textarea
+            id="sporeMeasurements"
+            rows={3}
+            placeholder="9.5 x 7, 10 x 7.5, 8.5 x 6.5 …"
+            value={form.sporeMeasurements}
+            onChange={(e) => set('sporeMeasurements')(e.target.value)}
+            aria-invalid={!!errors.sporeMeasurements}
+            className={`${fieldClass} font-mono ${errors.sporeMeasurements ? 'ring-2 ring-rose-400/60' : ''}`}
+          />
+          {errors.sporeMeasurements && <p className="text-[11px] font-bold text-rose-600 mt-1 ml-1">{errors.sporeMeasurements}</p>}
+          {spores && (
+            <p className="mt-2 text-[11px] font-bold text-violet-800 bg-violet-50 rounded-2xl p-3 font-mono" aria-live="polite">
+              {formatSporeStats(spores)}
+            </p>
+          )}
+          <p className="text-[11px] font-medium text-gray-500 mt-1 ml-1">Measure at least 20 mature spores, for example from a spore print, for a reliable range.</p>
+        </div>
+        <Select id="melzers" label="Melzer's Reagent" options={MELZERS} value={form.melzers} onChange={set('melzers')} />
+        <Select id="clampConnections" label="Clamp Connections" options={CLAMPS} value={form.clampConnections} onChange={set('clampConnections')} />
       </FormSection>
 
       <FormSection title="Ecological Data" icon={TreeDeciduous} color="teal">
@@ -313,12 +513,12 @@ const FieldEntryPage: React.FC = () => {
 
       <motion.button
         whileTap={{ scale: 0.98 }}
-        onClick={handlePublish}
-        disabled={saving}
+        onClick={handleSave}
+        disabled={saving || processingPhotos}
         className="w-full bg-emerald-600 disabled:opacity-60 text-white p-4 rounded-3xl flex items-center justify-center gap-2 shadow-xl shadow-emerald-600/30"
       >
         <Save className="w-4 h-4" />
-        <span className="font-black text-xs uppercase tracking-widest">{saving ? 'Saving…' : 'Save Record'}</span>
+        <span className="font-black text-xs uppercase tracking-widest">{saving ? 'Saving…' : isEdit ? 'Save Changes' : 'Save Record'}</span>
       </motion.button>
     </div>
   );

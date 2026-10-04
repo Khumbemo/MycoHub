@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { LogOut, Download, RefreshCw, UserCircle2, CloudOff, Trash2 } from 'lucide-react';
+import { LogOut, Download, RefreshCw, UserCircle2, CloudOff, Trash2, Sun, Moon, Monitor } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { localDb } from '../../utils/db';
-import { syncRecord, useLocalRecords } from '../../utils/observations';
+import { useLocalRecords } from '../../utils/observations';
+import { syncNow, useSyncState } from '../../utils/sync';
+import { getThemePref, setThemePref, type ThemePref } from '../../utils/theme';
 import { toCsv } from '../../utils/dwc';
 
 const SettingsPage: React.FC = () => {
@@ -11,19 +13,28 @@ const SettingsPage: React.FC = () => {
   const navigate = useNavigate();
   const records = useLocalRecords() ?? [];
   const [message, setMessage] = useState<string | null>(null);
-  const [syncing, setSyncing] = useState(false);
+  const sync = useSyncState();
   const [confirmClear, setConfirmClear] = useState(false);
+  const [theme, setTheme] = useState<ThemePref>(getThemePref);
 
-  const unsynced = records.filter((r) => !r.synced);
+  const unsynced = records.filter((r) => !r.synced || r.dirty || r.statusDirty || r.identifications.some((i) => i.pending));
+  const errored = records.filter((r) => r.syncError);
 
   const handleSync = async () => {
-    setSyncing(true);
-    let ok = 0;
-    for (const r of unsynced) if (await syncRecord(r)) ok++;
-    setSyncing(false);
-    setMessage(ok === unsynced.length
-      ? `Synced ${ok} record${ok === 1 ? '' : 's'}.`
-      : `Synced ${ok} of ${unsynced.length}. ${isOffline ? 'Sign in with an account to sync.' : 'Check your connection and try again.'}`);
+    const report = await syncNow();
+    if (report.skipped) {
+      setMessage(isOffline ? 'Sign in with an account to sync. Offline records stay on this device.' : report.skipped === 'error' ? 'Sync failed. Check your connection.' : report.skipped);
+      return;
+    }
+    setMessage(
+      `Uploaded ${report.pushed}, downloaded ${report.pulled}` +
+      (report.failed ? `, ${report.failed} failed and will retry automatically.` : '.'),
+    );
+  };
+
+  const chooseTheme = (t: ThemePref) => {
+    setTheme(t);
+    setThemePref(t);
   };
 
   const handleExport = () => {
@@ -60,11 +71,11 @@ const SettingsPage: React.FC = () => {
         </div>
         <div className="min-w-0">
           <h2 className="font-black text-gray-800 text-lg leading-tight truncate">{user?.displayName}</h2>
-          <p className="text-xs font-bold text-gray-400 truncate">{user?.email || 'No email on this account'}</p>
+          <p className="text-xs font-bold text-gray-500 truncate">{user?.email || 'No email on this account'}</p>
           <div className="flex flex-wrap gap-2 mt-2">
-            <span className="px-2 py-1 rounded-lg text-[8px] font-black uppercase tracking-widest bg-emerald-50 text-emerald-700">{user?.role}</span>
+            <span className="px-2 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest bg-emerald-50 text-emerald-700">{user?.role}</span>
             {isOffline && (
-              <span className="px-2 py-1 rounded-lg text-[8px] font-black uppercase tracking-widest bg-amber-50 text-amber-700 flex items-center gap-1">
+              <span className="px-2 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest bg-amber-50 text-amber-700 flex items-center gap-1">
                 <CloudOff className="w-3 h-3" /> Offline session
               </span>
             )}
@@ -76,21 +87,30 @@ const SettingsPage: React.FC = () => {
         <p role="status" className="bg-emerald-50 text-emerald-700 text-xs font-bold p-4 rounded-2xl">{message}</p>
       )}
 
-      <h3 className="text-xs font-black text-gray-400 uppercase tracking-widest ml-2 pt-2">Data</h3>
+      <h3 className="text-xs font-black text-gray-500 uppercase tracking-widest ml-2 pt-2">Data</h3>
 
-      <button onClick={handleSync} disabled={syncing || unsynced.length === 0} className={rowBtn}>
-        <RefreshCw className={`w-5 h-5 text-blue-600 ${syncing ? 'animate-spin' : ''}`} />
+      <button onClick={handleSync} disabled={sync.running} className={rowBtn}>
+        <RefreshCw className={`w-5 h-5 text-blue-600 ${sync.running ? 'animate-spin' : ''}`} />
         <div>
-          <span className="block font-black text-gray-800 text-sm">Sync to cloud</span>
-          <span className="text-[10px] font-bold text-gray-400">{unsynced.length} of {records.length} records not yet synced</span>
+          <span className="block font-black text-gray-800 text-sm">{sync.running ? 'Syncing…' : 'Sync now'}</span>
+          <span className="text-[11px] font-bold text-gray-500">
+            {unsynced.length} change{unsynced.length === 1 ? '' : 's'} waiting
+            {sync.lastSyncedAt ? ` · last synced ${new Date(sync.lastSyncedAt).toLocaleTimeString()}` : ''}
+            {' · syncs automatically when online'}
+          </span>
         </div>
       </button>
+      {errored.length > 0 && (
+        <p className="bg-amber-50 text-amber-800 text-[11px] font-bold p-4 rounded-2xl">
+          {errored.length} record{errored.length === 1 ? '' : 's'} had sync problems: {errored[0].syncError}
+        </p>
+      )}
 
       <button onClick={handleExport} disabled={records.length === 0} className={rowBtn}>
         <Download className="w-5 h-5 text-emerald-600" />
         <div>
           <span className="block font-black text-gray-800 text-sm">Export Darwin Core CSV</span>
-          <span className="text-[10px] font-bold text-gray-400">occurrenceID, scientificName, eventDate, decimalLatitude…</span>
+          <span className="text-[10px] font-bold text-gray-500">occurrenceID, scientificName, eventDate, decimalLatitude…</span>
         </div>
       </button>
 
@@ -99,7 +119,7 @@ const SettingsPage: React.FC = () => {
           <Trash2 className="w-5 h-5 text-rose-500" />
           <div>
             <span className="block font-black text-gray-800 text-sm">Delete local records</span>
-            <span className="text-[10px] font-bold text-gray-400">Removes records stored on this device</span>
+            <span className="text-[10px] font-bold text-gray-500">Removes them from this device; synced records download again on the next sync</span>
           </div>
         </button>
       ) : (
@@ -114,14 +134,32 @@ const SettingsPage: React.FC = () => {
         </div>
       )}
 
-      <h3 className="text-xs font-black text-gray-400 uppercase tracking-widest ml-2 pt-2">Account</h3>
+      <h3 className="text-xs font-black text-gray-500 uppercase tracking-widest ml-2 pt-2">Appearance</h3>
+
+      <div role="radiogroup" aria-label="Theme" className="grid grid-cols-3 gap-2">
+        {([['system', 'System', Monitor], ['light', 'Light', Sun], ['dark', 'Dark', Moon]] as const).map(([value, text, Icon]) => (
+          <button
+            key={value}
+            role="radio"
+            aria-checked={theme === value}
+            onClick={() => chooseTheme(value)}
+            className={`p-4 rounded-2xl border flex flex-col items-center gap-1 text-[11px] font-black uppercase tracking-widest ${
+              theme === value ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-white text-gray-600 border-gray-100'
+            }`}
+          >
+            <Icon className="w-5 h-5" /> {text}
+          </button>
+        ))}
+      </div>
+
+      <h3 className="text-xs font-black text-gray-500 uppercase tracking-widest ml-2 pt-2">Account</h3>
 
       <button onClick={handleLogout} className={rowBtn}>
         <LogOut className="w-5 h-5 text-gray-500" />
         <span className="font-black text-gray-800 text-sm">Sign out</span>
       </button>
 
-      <p className="text-center text-[8px] font-black text-gray-300 uppercase tracking-[0.2em] pt-4">MycoHub v1.0.0-alpha</p>
+      <p className="text-center text-[10px] font-black text-gray-500 uppercase tracking-[0.2em] pt-4">MycoHub v1.0.0-alpha</p>
     </div>
   );
 };

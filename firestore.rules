@@ -55,11 +55,12 @@ service cloud.firestore {
     match /observations/{obsId} {
       function validRecord(d) {
         return d.keys().hasOnly([
-            'id', 'userId', 'collectorName', 'collectionNumber', 'timestamp', 'status',
-            'locality', 'latitude', 'longitude',
-            'scientificName', 'identificationConfidence',
+            'id', 'userId', 'collectorName', 'collectionNumber', 'timestamp', 'status', 'consensusTaxon',
+            'locality', 'latitude', 'longitude', 'coordinateUncertaintyInMeters',
+            'scientificName', 'identificationConfidence', 'taxonomy',
             'capDiameterMm', 'capShape', 'capColor', 'hymeniumType', 'gillSpacing', 'attachment',
             'odor', 'bruising', 'koh', 'feso4', 'taste',
+            'sporePrintColor', 'sporeMeasurements', 'melzers', 'clampConnections',
             'trophicMode', 'substrate', 'hostSpecies', 'habitatType',
             'preserved', 'dnaExtracted', 'herbariumCode', 'accessionNumber',
             'mediaUrls', 'createdAt', 'updatedAt'])
@@ -70,7 +71,12 @@ service cloud.firestore {
           && d.timestamp is string
           && optionalCoord(d.get('latitude', null), 90)
           && optionalCoord(d.get('longitude', null), 180)
-          && (!('mediaUrls' in d) || (d.mediaUrls is list && d.mediaUrls.size() <= 20));
+          && (!('mediaUrls' in d) || (d.mediaUrls is list && d.mediaUrls.size() <= 20))
+          && (d.get('coordinateUncertaintyInMeters', null) == null
+              || ((d.coordinateUncertaintyInMeters is int || d.coordinateUncertaintyInMeters is float)
+                  && d.coordinateUncertaintyInMeters >= 0 && d.coordinateUncertaintyInMeters <= 20037509))
+          && (!('sporeMeasurements' in d) || shortString(d.sporeMeasurements, 5000))
+          && (!('taxonomy' in d) || d.taxonomy is map);
       }
 
       allow read: if signedIn();
@@ -85,7 +91,7 @@ service cloud.firestore {
       allow update: if signedIn()
         && resource.data.userId == request.auth.uid
         && validRecord(request.resource.data)
-        && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['userId', 'status', 'createdAt']);
+        && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['userId', 'status', 'consensusTaxon', 'createdAt']);
 
       // Identifiers (and above) change only the verification status.
       allow update: if isIdentifier()
@@ -93,6 +99,31 @@ service cloud.firestore {
         && request.resource.data.status in ['UNVERIFIED', 'COMMUNITY_GRADE', 'RESEARCH_GRADE', 'FLAGGED'];
 
       allow delete: if signedIn() && (resource.data.userId == request.auth.uid || isCurator());
+
+      // One identification per person, stored under their uid. The role must be
+      // the one in their token, so an identification can't claim expertise.
+      // Status is recomputed from these by the onIdentificationWrite Cloud Function.
+      match /identifications/{uid} {
+        allow read: if signedIn();
+
+        allow create, update: if signedIn()
+          && request.auth.uid == uid
+          && exists(/databases/$(database)/documents/observations/$(obsId))
+          && request.resource.data.keys().hasOnly(['userId', 'userName', 'role', 'taxon', 'comment', 'createdAt'])
+          && request.resource.data.userId == uid
+          && request.resource.data.role == role()
+          && shortString(request.resource.data.taxon, 300) && request.resource.data.taxon.size() > 0
+          && shortString(request.resource.data.userName, 200)
+          && (!('comment' in request.resource.data) || shortString(request.resource.data.comment, 2000))
+          && request.resource.data.createdAt == request.time;
+
+        allow delete: if signedIn() && request.auth.uid == uid;
+      }
+    }
+
+    // Collection-group reads of identifications (used by sync to fetch them in one query).
+    match /{path=**}/identifications/{uid} {
+      allow read: if signedIn();
     }
 
     // Everything else is closed.

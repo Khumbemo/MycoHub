@@ -6,7 +6,7 @@ import {
   initializeTestEnvironment,
   type RulesTestEnvironment,
 } from '@firebase/rules-unit-testing';
-import { doc, getDoc, setDoc, updateDoc, deleteDoc, serverTimestamp, Timestamp } from 'firebase/firestore';
+import { collectionGroup, doc, getDoc, getDocs, setDoc, updateDoc, deleteDoc, serverTimestamp, Timestamp } from 'firebase/firestore';
 
 let env: RulesTestEnvironment;
 
@@ -166,6 +166,74 @@ describe('observations/{id}: update and delete', () => {
     await assertFails(deleteDoc(doc(asUser('ida', 'IDENTIFIER'), 'observations/o1')));
     await assertSucceeds(deleteDoc(doc(asUser('alice'), 'observations/o2')));
     await assertSucceeds(deleteDoc(doc(asUser('carol', 'CURATOR'), 'observations/o3')));
+  });
+});
+
+describe('observations: science fields', () => {
+  it('accepts coordinate uncertainty, GBIF taxonomy and microscopy', async () => {
+    await assertSucceeds(setDoc(doc(asUser('alice'), 'observations/o1'), record('alice', {
+      coordinateUncertaintyInMeters: 12,
+      taxonomy: { taxonKey: 2524566, family: 'Amanitaceae', matchType: 'EXACT' },
+      sporeMeasurements: '9 x 7, 10 x 7.5',
+      sporePrintColor: 'white',
+      melzers: 'INAMYLOID',
+      clampConnections: 'ABSENT',
+    })));
+  });
+
+  it('rejects a negative uncertainty and a non-map taxonomy', async () => {
+    await assertFails(setDoc(doc(asUser('alice'), 'observations/o1'), record('alice', { coordinateUncertaintyInMeters: -5 })));
+    await assertFails(setDoc(doc(asUser('alice'), 'observations/o2'), record('alice', { taxonomy: 'Amanitaceae' })));
+  });
+
+  it('does not let the owner set the consensus taxon', async () => {
+    await seed('o1', 'alice');
+    await assertFails(updateDoc(doc(asUser('alice'), 'observations/o1'), { consensusTaxon: 'Amanita muscaria' }));
+  });
+});
+
+describe('observations/{id}/identifications/{uid}', () => {
+  const ident = (uid: string, role = 'COLLECTOR', overrides: Record<string, unknown> = {}) => ({
+    userId: uid, userName: uid, role, taxon: 'Amanita muscaria', createdAt: serverTimestamp(), ...overrides,
+  });
+
+  it('lets any signed-in user add their own identification', async () => {
+    await seed('o1', 'alice');
+    await assertSucceeds(setDoc(doc(asUser('bob'), 'observations/o1/identifications/bob'), ident('bob')));
+    await assertSucceeds(setDoc(doc(asUser('ida', 'IDENTIFIER'), 'observations/o1/identifications/ida'), ident('ida', 'IDENTIFIER', { comment: 'Spores inamyloid' })));
+  });
+
+  it('blocks claiming a role the token does not have', async () => {
+    await seed('o1', 'alice');
+    await assertFails(setDoc(doc(asUser('bob'), 'observations/o1/identifications/bob'), ident('bob', 'IDENTIFIER')));
+  });
+
+  it("blocks writing someone else's identification", async () => {
+    await seed('o1', 'alice');
+    await assertFails(setDoc(doc(asUser('mallory'), 'observations/o1/identifications/bob'), ident('bob')));
+    await assertFails(setDoc(doc(asUser('mallory'), 'observations/o1/identifications/mallory'), ident('bob')));
+  });
+
+  it('requires the observation to exist and a non-empty taxon', async () => {
+    await assertFails(setDoc(doc(asUser('bob'), 'observations/missing/identifications/bob'), ident('bob')));
+    await seed('o1', 'alice');
+    await assertFails(setDoc(doc(asUser('bob'), 'observations/o1/identifications/bob'), ident('bob', 'COLLECTOR', { taxon: '' })));
+    await assertFails(setDoc(doc(asUser('bob'), 'observations/o1/identifications/bob'), ident('bob', 'COLLECTOR', { verified: true })));
+  });
+
+  it('can be read by signed-in users, including as a collection group', async () => {
+    await seed('o1', 'alice');
+    await env.withSecurityRulesDisabled((ctx) => setDoc(doc(ctx.firestore(), 'observations/o1/identifications/bob'), { ...ident('bob'), createdAt: Timestamp.now() }));
+    await assertSucceeds(getDoc(doc(asUser('carol'), 'observations/o1/identifications/bob')));
+    await assertSucceeds(getDocs(collectionGroup(asUser('carol'), 'identifications')));
+    await assertFails(getDocs(collectionGroup(env.unauthenticatedContext().firestore(), 'identifications')));
+  });
+
+  it('lets people withdraw only their own identification', async () => {
+    await seed('o1', 'alice');
+    await env.withSecurityRulesDisabled((ctx) => setDoc(doc(ctx.firestore(), 'observations/o1/identifications/bob'), { ...ident('bob'), createdAt: Timestamp.now() }));
+    await assertFails(deleteDoc(doc(asUser('mallory'), 'observations/o1/identifications/bob')));
+    await assertSucceeds(deleteDoc(doc(asUser('bob'), 'observations/o1/identifications/bob')));
   });
 });
 

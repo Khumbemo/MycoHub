@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { NavLink, useOutlet, useNavigate, useLocation } from 'react-router-dom';
-import { Home, PlusSquare, BookOpen, Users, Activity, Settings, ArrowLeft, MessageCircle, CloudOff } from 'lucide-react';
+import { Home, PlusSquare, BookOpen, Users, Activity, Settings, ArrowLeft, MessageCircle, CloudOff, RefreshCw } from 'lucide-react';
 import type { PanInfo } from 'framer-motion';
 import { useAuth } from '../../contexts/AuthContext';
+import { startAutoSync, useSyncState } from '../../utils/sync';
 import { cn } from '../../utils/cn';
 import { motion, AnimatePresence } from 'framer-motion';
 import SafetyDisclaimer from '../SafetyDisclaimer';
@@ -12,15 +13,22 @@ const TopHeader = () => {
   const location = useLocation();
 
   const { isOffline } = useAuth();
+  const sync = useSyncState();
 
-  // Pages reached from the header rather than the bottom nav get a back button.
-  const subPageTitles: Record<string, string> = {
-    'settings': 'Settings & Profile',
-  };
-
-  const currentSubPath = location.pathname.split('/').filter(Boolean).join('/');
-  const subTitle = subPageTitles[currentSubPath];
+  // Pages reached from the header or a record get a back button.
+  const [first, second] = location.pathname.split('/').filter(Boolean);
+  const subTitle =
+    first === 'settings' ? 'Settings & Profile'
+      : first === 'record' ? 'Record'
+        : first === 'entry' && second ? 'Edit Record'
+          : undefined;
   const isSubPage = !!subTitle;
+  const goBack = () => {
+    // react-router keeps the history index in history.state.idx
+    const idx = (window.history.state as { idx?: number } | null)?.idx ?? 0;
+    if (idx > 0) navigate(-1);
+    else navigate('/');
+  };
 
   return (
     <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b-0 px-4 py-3 flex justify-between items-center mx-3 mt-3 rounded-2xl shadow-sm">
@@ -29,8 +37,8 @@ const TopHeader = () => {
           <motion.button
             whileHover={{ x: -2 }}
             whileTap={{ scale: 0.95 }}
-            onClick={() => navigate('/')}
-            aria-label="Back to dashboard"
+            onClick={goBack}
+            aria-label="Back"
             className="p-2 -ml-1 text-gray-500 hover:text-emerald-600 hover:bg-emerald-50 transition-all rounded-xl"
           >
             <ArrowLeft className="w-5 h-5" strokeWidth={2.5} />
@@ -46,11 +54,16 @@ const TopHeader = () => {
             </div>
             <div>
               <span className="font-black text-lg text-gray-800 tracking-tight leading-none block">MycoHub</span>
-              <span className="text-[8px] text-gray-400 font-mono font-bold uppercase tracking-widest">Research v1.0</span>
+              <span className="text-[10px] text-gray-500 font-mono font-bold uppercase tracking-widest">Research v1.0</span>
             </div>
             {isOffline && (
-              <span className="ml-1 flex items-center gap-1 bg-amber-50 text-amber-700 px-2 py-1 rounded-lg text-[8px] font-black uppercase tracking-widest">
+              <span className="ml-1 flex items-center gap-1 bg-amber-50 text-amber-800 px-2 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest">
                 <CloudOff className="w-3 h-3" /> Offline
+              </span>
+            )}
+            {sync.running && (
+              <span className="ml-1 flex items-center gap-1 text-emerald-700 text-[10px] font-black uppercase tracking-widest" role="status">
+                <RefreshCw className="w-3 h-3 animate-spin" /> Syncing
               </span>
             )}
           </div>
@@ -59,7 +72,7 @@ const TopHeader = () => {
             whileTap={{ scale: 0.9 }}
             onClick={() => navigate('/settings')}
             aria-label="Settings"
-            className="p-2 text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 transition-all rounded-xl"
+            className="p-2 text-gray-500 hover:text-emerald-600 hover:bg-emerald-50 transition-all rounded-xl"
           >
             <Settings className="w-5 h-5" strokeWidth={2.5} />
           </motion.button>
@@ -111,13 +124,13 @@ const BottomNav = () => {
                 <Icon
                   className={cn(
                     "w-5 h-5 mb-0.5 transition-colors duration-300",
-                    getIsActive(to) ? "text-emerald-600" : "text-gray-400"
+                    getIsActive(to) ? "text-emerald-600" : "text-gray-500"
                   )}
                   strokeWidth={2.5}
                 />
                 <span className={cn(
-                  "text-[8px] font-black uppercase tracking-widest transition-colors duration-300",
-                  getIsActive(to) ? "text-emerald-600" : "text-gray-400"
+                  "text-[10px] font-black uppercase tracking-widest transition-colors duration-300",
+                  getIsActive(to) ? "text-emerald-600" : "text-gray-500"
                 )}>
                   {label}
                 </span>
@@ -137,6 +150,10 @@ const MainLayout: React.FC = () => {
   // showing itself instead of rendering the new route (a plain <Outlet /> would).
   const outlet = useOutlet();
   const [direction, setDirection] = useState(0);
+  const { user } = useAuth();
+
+  // Background sync: on start, when back online, when reopened, and every few minutes.
+  useEffect(() => startAutoSync(), [user?.id]);
 
   const currentIndex = navItems.findIndex(item => {
     if (item.to === '/') return location.pathname === '/';
@@ -144,7 +161,7 @@ const MainLayout: React.FC = () => {
   });
 
   // Swipe between tabs, except on pages with text entry where it fights scrolling and selection.
-  const swipeEnabled = !['/entry', '/chat'].includes(location.pathname);
+  const swipeEnabled = !['/entry', '/chat', '/record'].some((p) => location.pathname.startsWith(p));
 
   const handleDragEnd = (_event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
     const isInput = ['INPUT', 'TEXTAREA'].includes(document.activeElement?.tagName || '');

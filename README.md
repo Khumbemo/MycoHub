@@ -22,15 +22,67 @@ npm run dev
 | `npm run lint` | ESLint |
 | `npm test` | Unit tests (Vitest) |
 | `npm run test:rules` | Firestore and Storage security-rules tests against the emulators (needs Java 21) |
+| `npm run test:sync` | The real sync engine against the Auth, Firestore and Storage emulators |
+| `npm run test:functions` | The consensus Cloud Function in the Functions emulator |
 | `npm run test:e2e` | End-to-end tests (Playwright) against the production build; run `npm run build` first |
 | `npm run emulators` | Local Auth, Firestore and Storage emulators. Use with `VITE_USE_EMULATORS=true npm run dev` |
 | `npm run deploy:rules` | Deploy `firestore.rules` and `storage.rules` to the Firebase project |
+| `npm run deploy:functions` | Deploy the Cloud Functions (needs the Blaze plan) |
 | `npm run set-role -- <uid-or-email> <ROLE>` | Give a user a role (see below) |
 | `npm run android:sync` | Build and copy into the Android project |
 
 CI (`.github/workflows/ci.yml`) runs lint, typecheck, unit, rules and e2e tests on
 every push and PR. It also builds a debug APK, which you can download from the run's
 **Artifacts** section as `mycohub-debug-apk`.
+
+## How sync works
+
+Records are saved to IndexedDB first, so the app works with no signal. When you're signed in
+and online, the sync engine (`src/utils/sync.ts`) runs at start-up, when the device comes back
+online, when the app is reopened, and every 5 minutes. Each pass:
+
+1. Deletes server copies of records you deleted on the device.
+2. Pushes new records, edits, identifications and flags. Failures retry with backoff
+   (15 s, 30 s, 1 min … up to 30 min). If the server refuses a change (security rules),
+   it isn't retried, and the record shows why.
+3. Pulls the latest 300 records and their identifications. Local edits that haven't been
+   pushed yet always win over the server copy.
+
+Records made in an offline session move to your account the first time you sign in.
+Photos are resized to at most 2048 px before they're stored.
+
+## Identification and verification
+
+Each person has one vote: their latest identification. The observer's original name counts
+as their vote. This is modelled on iNaturalist's community taxon:
+
+- **Community grade:** at least 2 votes, with more than ⅔ agreeing on one name.
+- **Research grade:** community grade, plus an agreeing Identifier (or Curator/Admin), plus a
+  date and coordinates.
+- **Flagged:** set by an Identifier and never computed. It stays until someone removes it.
+
+Names are compared exactly, ignoring case and spacing. Unlike iNaturalist, a genus-level
+identification doesn't count as agreeing with a species in that genus.
+
+The rule lives in `functions/consensus.js`, which both the app and the Cloud Function use:
+
+- `onIdentificationWrite` recomputes the server status whenever an identification changes.
+- Clients can't write `status` or `consensusTaxon` themselves.
+- Until the function is deployed, the app works out the same status locally.
+
+## Science features
+
+- **Coordinate uncertainty** (`coordinateUncertaintyInMeters`) is filled from GPS accuracy.
+  Android reports a 68% radius, so the app scales it to 95% (× 1.62) to match browsers.
+- **GBIF name check** matches the name against the GBIF Backbone Taxonomy (kingdom Fungi).
+  It resolves synonyms to the accepted name, suggests corrections for misspellings, and
+  stores the classification and `taxonKey`.
+- **Microscopy:** enter spore length × width pairs. The app reports the range, mean,
+  Q = length/width per spore, Qm (the mean of the per-spore Q values) and n.
+- **Research Lab** shows per-site richness S, Shannon H′, Pielou J′, Chao1 (bias-corrected),
+  sampling completeness (S/Chao1), a rarefaction curve (Hurlbert 1971) and monthly phenology.
+- The **Darwin Core CSV** includes taxonID, higher classification, coordinate uncertainty and
+  a spore summary in `occurrenceRemarks`.
 
 ## Security model
 

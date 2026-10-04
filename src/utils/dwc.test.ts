@@ -11,7 +11,13 @@ const record = (overrides: Partial<FieldRecord> = {}): FieldRecord => ({
   odor: '', bruising: '', koh: '', feso4: '', taste: '',
   trophicMode: 'ECTOMYCORRHIZAL', substrate: 'SOIL', hostSpecies: 'Betula', habitatType: 'BROADLEAF_WOODLAND',
   preserved: true, dnaExtracted: false, herbariumCode: 'NY', accessionNumber: '123',
-  photos: [], mediaUrls: [],
+  photos: [], mediaUrls: [], identifications: [], coordinateUncertaintyInMeters: 15,
+  sporePrintColor: 'white', sporeMeasurements: '9 x 7, 10 x 7.5', melzers: 'INAMYLOID', clampConnections: 'ABSENT',
+  updatedAt: '2026-10-04T12:00:00.000Z', dirty: false, statusDirty: false, syncAttempts: 0, nextSyncAt: 0,
+  taxonomy: {
+    taxonKey: 2524566, matchedName: 'Amanita muscaria (L.) Lam.', acceptedName: 'Amanita muscaria (L.) Lam.', rank: 'SPECIES',
+    status: 'ACCEPTED', matchType: 'EXACT', confidence: 99, family: 'Amanitaceae', order: 'Agaricales',
+  },
   ...overrides,
 });
 
@@ -47,6 +53,11 @@ describe('toCsv', () => {
     expect(get('decimalLatitude')).toBe('41.378');
     expect(get('geodeticDatum')).toBe('WGS84');
     expect(get('kingdom')).toBe('Fungi');
+    expect(get('family')).toBe('Amanitaceae');
+    expect(get('taxonID')).toBe('https://www.gbif.org/species/2524566');
+    expect(get('coordinateUncertaintyInMeters')).toBe('15');
+    expect(get('identificationVerificationStatus')).toBe('UNVERIFIED');
+    expect(get('occurrenceRemarks')).toContain('spore print white; spores 9.0–10.0 × 7.0–7.5 µm');
   });
 
   it('leaves geodeticDatum empty when there are no coordinates', () => {

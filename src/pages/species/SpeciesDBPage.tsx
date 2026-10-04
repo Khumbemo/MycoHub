@@ -9,9 +9,9 @@ const SpeciesCard: React.FC<{ species: SpeciesEntry }> = ({ species: s }) => {
       <div className="flex justify-between items-start gap-3 mb-2">
         <div className="min-w-0">
           <h3 className="text-lg font-black italic text-gray-800 leading-tight">{s.scientificName}</h3>
-          <p className="text-[10px] font-bold text-gray-400 mt-1 uppercase tracking-widest">{s.authorCitation}</p>
+          <p className="text-[10px] font-bold text-gray-500 mt-1 uppercase tracking-widest">{s.authorCitation}</p>
         </div>
-        <div className="px-2 py-1 rounded-lg text-[8px] font-black uppercase tracking-tighter bg-emerald-50 text-emerald-600 flex-shrink-0">
+        <div className="px-2 py-1 rounded-lg text-[10px] font-black uppercase tracking-tighter bg-emerald-50 text-emerald-600 flex-shrink-0">
           {s.nomenclaturalStatus === 'VALID' ? 'Accepted' : s.nomenclaturalStatus}
         </div>
       </div>
@@ -25,16 +25,16 @@ const SpeciesCard: React.FC<{ species: SpeciesEntry }> = ({ species: s }) => {
         <dl className="grid grid-cols-[auto,1fr] gap-x-4 gap-y-1 text-xs mb-4 bg-gray-50 rounded-2xl p-4">
           {(['phylum', 'class', 'order', 'family', 'genus'] as const).map((rank) => (
             <React.Fragment key={rank}>
-              <dt className="font-black text-gray-400 uppercase tracking-widest text-[9px] pt-0.5">{rank}</dt>
+              <dt className="font-black text-gray-500 uppercase tracking-widest text-[10px] pt-0.5">{rank}</dt>
               <dd className="font-bold text-gray-700">{s.taxonomy[rank]}</dd>
             </React.Fragment>
           ))}
           {s.synonyms.length > 0 && (
             <>
-              <dt className="font-black text-gray-400 uppercase tracking-widest text-[9px] pt-0.5">Synonyms</dt>
+              <dt className="font-black text-gray-500 uppercase tracking-widest text-[10px] pt-0.5">Synonyms</dt>
               <dd className="font-bold text-gray-700">
                 {s.synonyms.map((syn) => (
-                  <span key={syn} className="flex items-center gap-1"><GitBranch className="w-3 h-3 text-gray-400" /><i>{syn}</i></span>
+                  <span key={syn} className="flex items-center gap-1"><GitBranch className="w-3 h-3 text-gray-500" /><i>{syn}</i></span>
                 ))}
               </dd>
             </>
@@ -86,7 +86,7 @@ const SpeciesDBPage: React.FC = () => {
       </div>
 
       <div className="relative mb-6">
-        <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
+        <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-500 w-5 h-5" />
         <label htmlFor="species-search" className="sr-only">Search species</label>
         <input
           id="species-search"
