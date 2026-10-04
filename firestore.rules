@@ -1,0 +1,103 @@
+rules_version = '2';
+
+// MycoHub Firestore rules.
+// Roles live in Firebase Auth custom claims (request.auth.token.role), set only
+// by an admin via scripts/set-role.mjs. Nothing a client writes can grant a role.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function role() {
+      return signedIn() ? request.auth.token.get('role', 'COLLECTOR') : 'NONE';
+    }
+
+    function isIdentifier() {
+      return role() in ['IDENTIFIER', 'CURATOR', 'ADMIN'];
+    }
+
+    function isCurator() {
+      return role() in ['CURATOR', 'ADMIN'];
+    }
+
+    function optionalCoord(v, limit) {
+      return v == null || ((v is int || v is float) && v >= -limit && v <= limit);
+    }
+
+    function shortString(v, max) {
+      return v is string && v.size() <= max;
+    }
+
+    // ---- User profiles -------------------------------------------------------
+    match /users/{uid} {
+      allow read: if signedIn() && (request.auth.uid == uid || isCurator());
+
+      // A new profile can only claim the base role.
+      allow create: if signedIn()
+        && request.auth.uid == uid
+        && request.resource.data.id == uid
+        && request.resource.data.role == 'COLLECTOR'
+        && request.resource.data.keys().hasOnly(
+             ['id', 'email', 'displayName', 'role', 'joinedAt',
+              'institutionalAffiliation', 'specialization', 'orcidId', 'avatarUrl']);
+
+      // Owners may edit their profile but never their role.
+      allow update: if signedIn()
+        && request.auth.uid == uid
+        && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['id', 'role', 'joinedAt']);
+
+      allow delete: if false;
+    }
+
+    // ---- Observations --------------------------------------------------------
+    match /observations/{obsId} {
+      function validRecord(d) {
+        return d.keys().hasOnly([
+            'id', 'userId', 'collectorName', 'collectionNumber', 'timestamp', 'status',
+            'locality', 'latitude', 'longitude',
+            'scientificName', 'identificationConfidence',
+            'capDiameterMm', 'capShape', 'capColor', 'hymeniumType', 'gillSpacing', 'attachment',
+            'odor', 'bruising', 'koh', 'feso4', 'taste',
+            'trophicMode', 'substrate', 'hostSpecies', 'habitatType',
+            'preserved', 'dnaExtracted', 'herbariumCode', 'accessionNumber',
+            'mediaUrls', 'createdAt', 'updatedAt'])
+          && d.keys().hasAll(['userId', 'collectorName', 'collectionNumber', 'timestamp', 'status', 'scientificName'])
+          && shortString(d.collectorName, 200) && d.collectorName.size() > 0
+          && shortString(d.collectionNumber, 100) && d.collectionNumber.size() > 0
+          && shortString(d.scientificName, 300) && d.scientificName.size() > 0
+          && d.timestamp is string
+          && optionalCoord(d.get('latitude', null), 90)
+          && optionalCoord(d.get('longitude', null), 180)
+          && (!('mediaUrls' in d) || (d.mediaUrls is list && d.mediaUrls.size() <= 20));
+      }
+
+      allow read: if signedIn();
+
+      allow create: if signedIn()
+        && request.resource.data.userId == request.auth.uid
+        && request.resource.data.status == 'UNVERIFIED'
+        && request.resource.data.createdAt == request.time
+        && validRecord(request.resource.data);
+
+      // Owner edits the content; the verification status is not theirs to set.
+      allow update: if signedIn()
+        && resource.data.userId == request.auth.uid
+        && validRecord(request.resource.data)
+        && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['userId', 'status', 'createdAt']);
+
+      // Identifiers (and above) change only the verification status.
+      allow update: if isIdentifier()
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'updatedAt'])
+        && request.resource.data.status in ['UNVERIFIED', 'COMMUNITY_GRADE', 'RESEARCH_GRADE', 'FLAGGED'];
+
+      allow delete: if signedIn() && (resource.data.userId == request.auth.uid || isCurator());
+    }
+
+    // Everything else is closed.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

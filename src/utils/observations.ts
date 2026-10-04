@@ -6,6 +6,8 @@ import { auth, db, storage } from '../firebase/config';
 import { localDb } from './db';
 import type { FieldRecord } from '../types';
 
+export { shannonIndex, speciesCounts } from './stats';
+
 const SYNC_TIMEOUT_MS = 15000;
 
 const withTimeout = <T,>(promise: Promise<T>, ms: number): Promise<T> =>
@@ -25,13 +27,21 @@ const newId = () =>
 /** Try to push one local record to Firebase. Returns true when it synced. */
 export const syncRecord = async (record: FieldRecord): Promise<boolean> => {
   // Firestore rules require a signed-in Firebase user; offline sessions stay local.
+  // The record must belong to the signed-in account (storage and Firestore rules enforce this too).
   if (!db || !storage || !auth?.currentUser || !navigator.onLine) return false;
+  const uid = auth.currentUser.uid;
+  // Records made in an offline session belong to whoever signs in on this device.
+  if (record.userId.startsWith('local-')) {
+    record = { ...record, userId: uid };
+    await localDb.observations.update(record.id, { userId: uid });
+  }
+  if (record.userId !== uid) return false;
 
   try {
     await withTimeout((async () => {
       const mediaUrls = await Promise.all(record.photos.map(async (blob, i) => {
-        const storageRef = ref(storage!, `observations/${record.id}/photo-${i + 1}`);
-        const snapshot = await uploadBytes(storageRef, blob);
+        const storageRef = ref(storage!, `observations/${record.userId}/${record.id}/photo-${i + 1}`);
+        const snapshot = await uploadBytes(storageRef, blob, { contentType: blob.type || 'image/jpeg' });
         return getDownloadURL(snapshot.ref);
       }));
 
@@ -81,25 +91,6 @@ export const useLocalRecords = (): FieldRecord[] | null => {
   }, []);
 
   return records;
-};
-
-/** Shannon diversity H' = -Σ pᵢ ln pᵢ over species abundances. */
-export const shannonIndex = (counts: number[]): number => {
-  const total = counts.reduce((a, b) => a + b, 0);
-  if (total === 0) return 0;
-  return -counts.reduce((h, n) => (n === 0 ? h : h + (n / total) * Math.log(n / total)), 0);
-};
-
-/** Count records per scientific name (case-insensitive, trimmed). */
-export const speciesCounts = (records: FieldRecord[]): Map<string, number> => {
-  const counts = new Map<string, number>();
-  for (const r of records) {
-    const name = r.scientificName.trim();
-    if (!name) continue;
-    const key = name.charAt(0).toUpperCase() + name.slice(1).toLowerCase();
-    counts.set(key, (counts.get(key) ?? 0) + 1);
-  }
-  return counts;
 };
 
 export const formatRelative = (iso: string): string => {

@@ -2,11 +2,15 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import {
   onAuthStateChanged,
   signInWithPopup,
+  signInWithCredential,
   GoogleAuthProvider,
   signOut,
   signInAnonymously,
 } from 'firebase/auth';
+import { Capacitor } from '@capacitor/core';
+import { FirebaseAuthentication } from '@capacitor-firebase/authentication';
 import { auth, db } from '../firebase/config';
+import { roleAtLeast, roleFromClaims } from '../utils/roles';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import type { UserProfile, UserRole } from '../types';
 
@@ -26,7 +30,6 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 const OFFLINE_KEY = 'mycohub.offlineUser';
 // If Firebase never answers (blocked network, bad config), stop waiting after this long.
 const AUTH_TIMEOUT_MS = 6000;
-const ROLE_ORDER: UserRole[] = ['COLLECTOR', 'IDENTIFIER', 'CURATOR', 'ADMIN'];
 
 const readOfflineUser = (): UserProfile | null => {
   try {
@@ -45,10 +48,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // A Firebase account always wins over a local offline session.
   const user = firebaseProfile ?? offlineUser;
 
-  const hasRole = (requiredRole: UserRole): boolean => {
-    if (!user) return false;
-    return ROLE_ORDER.indexOf(user.role) >= ROLE_ORDER.indexOf(requiredRole);
-  };
+  const hasRole = (requiredRole: UserRole): boolean => roleAtLeast(user?.role, requiredRole);
 
   useEffect(() => {
     if (!auth) {
@@ -74,19 +74,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         joinedAt: new Date(),
       };
 
+      // The role is taken from the ID token's custom claims, never from the
+      // profile document, so a user cannot promote themselves.
+      let role: UserRole = 'COLLECTOR';
+      try {
+        role = roleFromClaims((await firebaseUser.getIdTokenResult()).claims);
+      } catch (e) {
+        console.warn('Could not read role claims; using COLLECTOR:', e);
+      }
+
       try {
         if (!db) throw new Error('Firestore unavailable');
         const ref = doc(db, 'users', firebaseUser.uid);
         const userDoc = await getDoc(ref);
         if (userDoc.exists()) {
-          setFirebaseProfile(userDoc.data() as UserProfile);
+          setFirebaseProfile({ ...(userDoc.data() as UserProfile), role });
         } else {
+          // Security rules only accept new profiles with the base role.
           await setDoc(ref, fallback);
-          setFirebaseProfile(fallback);
+          setFirebaseProfile({ ...fallback, role });
         }
       } catch (e) {
         console.error('Profile sync failed, using local profile:', e);
-        setFirebaseProfile(fallback);
+        setFirebaseProfile({ ...fallback, role });
       }
       clearTimeout(timeout);
       setLoading(false);
@@ -100,6 +110,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const login = async () => {
     if (!auth) throw new Error('Firebase Auth is not available');
+    if (Capacitor.isNativePlatform()) {
+      // Popups don't work in the Android WebView: sign in natively, then hand
+      // the Google ID token to the Firebase JS SDK (skipNativeAuth in capacitor.config.ts).
+      const result = await FirebaseAuthentication.signInWithGoogle();
+      const idToken = result.credential?.idToken;
+      if (!idToken) throw new Error('Google sign-in returned no ID token');
+      await signInWithCredential(auth, GoogleAuthProvider.credential(idToken));
+      return;
+    }
     await signInWithPopup(auth, new GoogleAuthProvider());
   };
 
@@ -128,6 +147,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const logout = async () => {
     try {
+      if (Capacitor.isNativePlatform()) await FirebaseAuthentication.signOut();
       if (auth?.currentUser) await signOut(auth);
     } catch (e) {
       console.error('Sign-out failed:', e);
