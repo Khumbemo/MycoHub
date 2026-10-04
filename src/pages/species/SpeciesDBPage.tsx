@@ -1,86 +1,113 @@
-import React from 'react';
-import { Search, Info, ExternalLink, GitBranch, AlertCircle } from 'lucide-react';
+import React, { useMemo, useState } from 'react';
+import { Search, ExternalLink, GitBranch, AlertTriangle, ChevronDown } from 'lucide-react';
+import { SPECIES, type SpeciesEntry } from '../../data/species';
 
-const SpeciesCard = ({ name, author, status, common }: any) => (
-  <div className="bg-white p-6 rounded-[2rem] shadow-sm border border-gray-100 mb-4">
-    <div className="flex justify-between items-start mb-2">
-      <div>
-        <h3 className="text-lg font-black italic text-gray-800 leading-tight">{name}</h3>
-        <p className="text-[10px] font-bold text-gray-400 mt-1 uppercase tracking-widest">{author}</p>
+const SpeciesCard: React.FC<{ species: SpeciesEntry }> = ({ species: s }) => {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="bg-white p-6 rounded-[2rem] shadow-sm border border-gray-100">
+      <div className="flex justify-between items-start gap-3 mb-2">
+        <div className="min-w-0">
+          <h3 className="text-lg font-black italic text-gray-800 leading-tight">{s.scientificName}</h3>
+          <p className="text-[10px] font-bold text-gray-400 mt-1 uppercase tracking-widest">{s.authorCitation}</p>
+        </div>
+        <div className="px-2 py-1 rounded-lg text-[8px] font-black uppercase tracking-tighter bg-emerald-50 text-emerald-600 flex-shrink-0">
+          {s.nomenclaturalStatus === 'VALID' ? 'Accepted' : s.nomenclaturalStatus}
+        </div>
       </div>
-      <div className={`px-2 py-1 rounded-lg text-[8px] font-black uppercase tracking-tighter ${status === 'VALID' ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-600'}`}>
-        {status}
+      {s.commonName && <p className="text-xs font-bold text-gray-500 mb-3">{s.commonName}</p>}
+      {s.toxicity && (
+        <p className="flex items-center gap-2 text-[10px] font-black text-rose-600 bg-rose-50 rounded-xl px-3 py-2 mb-3 uppercase tracking-wider">
+          <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0" /> {s.toxicity}
+        </p>
+      )}
+      {open && (
+        <dl className="grid grid-cols-[auto,1fr] gap-x-4 gap-y-1 text-xs mb-4 bg-gray-50 rounded-2xl p-4">
+          {(['phylum', 'class', 'order', 'family', 'genus'] as const).map((rank) => (
+            <React.Fragment key={rank}>
+              <dt className="font-black text-gray-400 uppercase tracking-widest text-[9px] pt-0.5">{rank}</dt>
+              <dd className="font-bold text-gray-700">{s.taxonomy[rank]}</dd>
+            </React.Fragment>
+          ))}
+          {s.synonyms.length > 0 && (
+            <>
+              <dt className="font-black text-gray-400 uppercase tracking-widest text-[9px] pt-0.5">Synonyms</dt>
+              <dd className="font-bold text-gray-700">
+                {s.synonyms.map((syn) => (
+                  <span key={syn} className="flex items-center gap-1"><GitBranch className="w-3 h-3 text-gray-400" /><i>{syn}</i></span>
+                ))}
+              </dd>
+            </>
+          )}
+        </dl>
+      )}
+      <div className="flex gap-2">
+        <button
+          onClick={() => setOpen((v) => !v)}
+          aria-expanded={open}
+          className="flex-1 bg-gray-50 hover:bg-emerald-50 text-gray-500 hover:text-emerald-600 p-2 rounded-xl transition-all flex items-center justify-center gap-2"
+        >
+          <ChevronDown className={`w-4 h-4 transition-transform ${open ? 'rotate-180' : ''}`} />
+          <span className="text-[10px] font-black uppercase tracking-widest">{open ? 'Hide' : 'Classification'}</span>
+        </button>
+        <a
+          href={`https://www.gbif.org/species/search?q=${encodeURIComponent(s.scientificName)}`}
+          target="_blank"
+          rel="noreferrer"
+          aria-label={`Open ${s.scientificName} on GBIF`}
+          className="bg-gray-50 hover:bg-blue-50 text-gray-500 hover:text-blue-600 p-2 rounded-xl transition-all flex items-center gap-1 text-[10px] font-black uppercase tracking-widest"
+        >
+          GBIF <ExternalLink className="w-4 h-4" />
+        </a>
       </div>
     </div>
-    {common && <p className="text-xs font-bold text-gray-500 mb-4">{common}</p>}
-    <div className="flex gap-2">
-        <button className="flex-1 bg-gray-50 hover:bg-emerald-50 text-gray-400 hover:text-emerald-600 p-2 rounded-xl transition-all flex items-center justify-center gap-2">
-            <Info className="w-4 h-4" />
-            <span className="text-[10px] font-black uppercase tracking-widest">Details</span>
-        </button>
-        <button className="bg-gray-50 hover:bg-blue-50 text-gray-400 hover:text-blue-600 p-2 rounded-xl transition-all">
-            <ExternalLink className="w-4 h-4" />
-        </button>
-    </div>
-  </div>
-);
+  );
+};
 
 const SpeciesDBPage: React.FC = () => {
+  const [query, setQuery] = useState('');
+
+  const results = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return SPECIES;
+    return SPECIES.filter((s) =>
+      [s.scientificName, s.commonName ?? '', s.taxonomy.family, s.taxonomy.order, ...s.synonyms]
+        .some((field) => field.toLowerCase().includes(q))
+    );
+  }, [query]);
+
   return (
     <div className="pb-12">
       <div className="mb-8">
-        <h2 className="text-3xl font-black text-gray-800 tracking-tighter">Taxonomy Backbone</h2>
-        <div className="flex items-center gap-2 text-[10px] font-bold text-emerald-600 uppercase tracking-widest mt-2">
-            <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
-            Index Fungorum Sync: Online
-        </div>
+        <h2 className="text-3xl font-black text-gray-800 tracking-tighter">Taxonomy Reference</h2>
+        <p className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest mt-2">
+          Offline list · {SPECIES.length} taxa · authorities per Species Fungorum
+        </p>
       </div>
 
-      <div className="relative mb-8">
+      <div className="relative mb-6">
         <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
+        <label htmlFor="species-search" className="sr-only">Search species</label>
         <input
-          type="text"
-          placeholder="Search Scientific Name / IF Number..."
-          className="w-full bg-white border-none rounded-[2rem] py-4 pl-14 pr-6 text-sm font-bold shadow-sm focus:ring-2 focus:ring-emerald-500/20"
+          id="species-search"
+          type="search"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Scientific name, common name, family, synonym…"
+          className="w-full bg-white border-none rounded-[2rem] py-4 pl-14 pr-6 text-sm font-bold shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
         />
-      </div>
-
-      <div className="bg-amber-50 p-6 rounded-[2rem] border border-amber-100 mb-8">
-          <div className="flex items-center gap-3 mb-3">
-              <AlertCircle className="w-5 h-5 text-amber-600" />
-              <h4 className="text-xs font-black text-amber-800 uppercase tracking-widest">Nomenclature Update</h4>
-          </div>
-          <p className="text-xs font-bold text-amber-700 leading-relaxed">
-            The genus <span className="italic">Cantharellus</span> has recently seen significant taxonomic revisions.
-            Ensure your local cache is synchronized before critical field assignments.
-          </p>
       </div>
 
       <div className="space-y-4">
-        <SpeciesCard
-          name="Amanita muscaria"
-          author="(L.) Lam."
-          status="VALID"
-          common="Fly Agaric"
-        />
-        <SpeciesCard
-          name="Cantharellus cibarius"
-          author="Fr."
-          status="VALID"
-          common="Chanterelle"
-        />
-        <div className="opacity-60 grayscale-[0.5]">
-            <SpeciesCard
-              name="Agaricus muscarius"
-              author="L."
-              status="INVALID"
-              common="Basionym for A. muscaria"
-            />
-            <div className="flex items-center gap-2 ml-6 -mt-2 mb-6">
-                <GitBranch className="w-4 h-4 text-gray-400" />
-                <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Synonymized under A. muscaria</span>
-            </div>
-        </div>
+        {results.map((s) => <SpeciesCard key={s.id} species={s} />)}
+        {results.length === 0 && (
+          <div className="bg-white p-6 rounded-[2rem] border border-gray-100 text-sm font-bold text-gray-500">
+            No match in the offline list.{' '}
+            <a className="text-emerald-600 underline" href={`https://www.gbif.org/species/search?q=${encodeURIComponent(query)}`} target="_blank" rel="noreferrer">
+              Search GBIF for “{query}”
+            </a>
+          </div>
+        )}
       </div>
     </div>
   );

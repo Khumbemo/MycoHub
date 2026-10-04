@@ -1,15 +1,17 @@
 import React from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import MainLayout from './components/layout/MainLayout';
 
 // Pages
+import LoginPage from './pages/auth/LoginPage';
 import DashboardPage from './pages/dashboard/DashboardPage';
 import FieldEntryPage from './pages/entry/FieldEntryPage';
 import SpeciesDBPage from './pages/species/SpeciesDBPage';
 import CommunityPage from './pages/community/CommunityPage';
 import ResearchDashboardPage from './pages/dashboard/ResearchDashboardPage';
 import ChatPage from './pages/chat/ChatPage';
+import SettingsPage from './pages/settings/SettingsPage';
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { loading, user } = useAuth();
@@ -21,11 +23,6 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
   if (!user) return <Navigate to="/login" replace />;
   return <>{children}</>;
 };
-
-// Placeholder components for remaining modules
-const ResearchPage = () => <div className="p-12 text-center font-black text-gray-300 uppercase tracking-widest leading-relaxed">Research & Labs Module<br/><span className="text-[10px] text-gray-200">Phenology · Richness · GIS</span></div>;
-const SettingsPage = () => <div className="p-12 text-center font-black text-gray-300 uppercase tracking-widest leading-relaxed">Settings & Profile<br/><span className="text-[10px] text-gray-200">ORCID ID: 0000-0002-1825-0097</span></div>;
-import LoginPage from './pages/auth/LoginPage';
 
 const AppRoutes = () => {
   return (
@@ -40,16 +37,19 @@ const AppRoutes = () => {
         <Route path="chat" element={<ChatPage />} />
         <Route path="settings" element={<SettingsPage />} />
       </Route>
+      <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
 };
 
+// HashRouter works from file://, Capacitor's WebView and any static host
+// without server-side rewrites.
 const App: React.FC = () => {
   return (
     <AuthProvider>
-      <BrowserRouter>
+      <HashRouter>
         <AppRoutes />
-      </BrowserRouter>
+      </HashRouter>
     </AuthProvider>
   );
 };

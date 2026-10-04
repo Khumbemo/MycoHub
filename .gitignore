@@ -1,0 +1,15 @@
+# Dependencies
+node_modules/
+
+# Build caches
+*.tsbuildinfo
+.vite/
+
+# Editor / OS
+.DS_Store
+*.log
+
+# Local env
+.env
+.env.local
+dist-standalone/

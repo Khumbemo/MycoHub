@@ -1,0 +1,158 @@
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { LogOut, Download, RefreshCw, UserCircle2, CloudOff, Trash2 } from 'lucide-react';
+import { useAuth } from '../../contexts/AuthContext';
+import { localDb } from '../../utils/db';
+import { syncRecord, useLocalRecords } from '../../utils/observations';
+import type { FieldRecord } from '../../types';
+
+// Column headers are Darwin Core term names so the file can be mapped straight into GBIF's IPT.
+const DWC_COLUMNS: [string, (r: FieldRecord) => string | number | null][] = [
+  ['occurrenceID', (r) => r.remoteId ?? r.id],
+  ['basisOfRecord', (r) => (r.preserved ? 'PreservedSpecimen' : 'HumanObservation')],
+  ['scientificName', (r) => r.scientificName],
+  ['kingdom', () => 'Fungi'],
+  ['identificationVerificationStatus', (r) => r.status],
+  ['recordedBy', (r) => r.collectorName],
+  ['recordNumber', (r) => r.collectionNumber],
+  ['eventDate', (r) => r.timestamp.slice(0, 10)],
+  ['locality', (r) => r.locality],
+  ['decimalLatitude', (r) => r.latitude],
+  ['decimalLongitude', (r) => r.longitude],
+  ['geodeticDatum', (r) => (r.latitude !== null ? 'WGS84' : '')],
+  ['habitat', (r) => r.habitatType],
+  ['substrate', (r) => r.substrate],
+  ['associatedTaxa', (r) => (r.hostSpecies ? `host: ${r.hostSpecies}` : '')],
+  ['institutionCode', (r) => r.herbariumCode],
+  ['catalogNumber', (r) => r.accessionNumber],
+];
+
+const csvCell = (v: string | number | null) => {
+  const s = v === null || v === undefined ? '' : String(v);
+  return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+};
+
+const toCsv = (records: FieldRecord[]) =>
+  [DWC_COLUMNS.map(([h]) => h).join(','), ...records.map((r) => DWC_COLUMNS.map(([, f]) => csvCell(f(r))).join(','))].join('\n');
+
+const SettingsPage: React.FC = () => {
+  const { user, isOffline, logout } = useAuth();
+  const navigate = useNavigate();
+  const records = useLocalRecords() ?? [];
+  const [message, setMessage] = useState<string | null>(null);
+  const [syncing, setSyncing] = useState(false);
+  const [confirmClear, setConfirmClear] = useState(false);
+
+  const unsynced = records.filter((r) => !r.synced);
+
+  const handleSync = async () => {
+    setSyncing(true);
+    let ok = 0;
+    for (const r of unsynced) if (await syncRecord(r)) ok++;
+    setSyncing(false);
+    setMessage(ok === unsynced.length
+      ? `Synced ${ok} record${ok === 1 ? '' : 's'}.`
+      : `Synced ${ok} of ${unsynced.length}. ${isOffline ? 'Sign in with an account to sync.' : 'Check your connection and try again.'}`);
+  };
+
+  const handleExport = () => {
+    const blob = new Blob([toCsv(records)], { type: 'text/csv;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `mycohub-occurrences-${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    setMessage(`Exported ${records.length} record${records.length === 1 ? '' : 's'} as Darwin Core CSV.`);
+  };
+
+  const handleClear = async () => {
+    await localDb.observations.clear();
+    setConfirmClear(false);
+    setMessage('Local records deleted.');
+  };
+
+  const handleLogout = async () => {
+    await logout();
+    navigate('/login', { replace: true });
+  };
+
+  const rowBtn = 'w-full bg-white p-5 rounded-[2rem] border border-gray-100 flex items-center gap-4 text-left disabled:opacity-50';
+
+  return (
+    <div className="pb-12 space-y-4">
+      <section className="bg-white p-6 rounded-[2rem] border border-gray-100 flex items-center gap-4">
+        <div className="w-14 h-14 bg-emerald-50 rounded-2xl flex items-center justify-center flex-shrink-0">
+          <UserCircle2 className="w-8 h-8 text-emerald-600" />
+        </div>
+        <div className="min-w-0">
+          <h2 className="font-black text-gray-800 text-lg leading-tight truncate">{user?.displayName}</h2>
+          <p className="text-xs font-bold text-gray-400 truncate">{user?.email || 'No email on this account'}</p>
+          <div className="flex flex-wrap gap-2 mt-2">
+            <span className="px-2 py-1 rounded-lg text-[8px] font-black uppercase tracking-widest bg-emerald-50 text-emerald-700">{user?.role}</span>
+            {isOffline && (
+              <span className="px-2 py-1 rounded-lg text-[8px] font-black uppercase tracking-widest bg-amber-50 text-amber-700 flex items-center gap-1">
+                <CloudOff className="w-3 h-3" /> Offline session
+              </span>
+            )}
+          </div>
+        </div>
+      </section>
+
+      {message && (
+        <p role="status" className="bg-emerald-50 text-emerald-700 text-xs font-bold p-4 rounded-2xl">{message}</p>
+      )}
+
+      <h3 className="text-xs font-black text-gray-400 uppercase tracking-widest ml-2 pt-2">Data</h3>
+
+      <button onClick={handleSync} disabled={syncing || unsynced.length === 0} className={rowBtn}>
+        <RefreshCw className={`w-5 h-5 text-blue-600 ${syncing ? 'animate-spin' : ''}`} />
+        <div>
+          <span className="block font-black text-gray-800 text-sm">Sync to cloud</span>
+          <span className="text-[10px] font-bold text-gray-400">{unsynced.length} of {records.length} records not yet synced</span>
+        </div>
+      </button>
+
+      <button onClick={handleExport} disabled={records.length === 0} className={rowBtn}>
+        <Download className="w-5 h-5 text-emerald-600" />
+        <div>
+          <span className="block font-black text-gray-800 text-sm">Export Darwin Core CSV</span>
+          <span className="text-[10px] font-bold text-gray-400">occurrenceID, scientificName, eventDate, decimalLatitude…</span>
+        </div>
+      </button>
+
+      {!confirmClear ? (
+        <button onClick={() => setConfirmClear(true)} disabled={records.length === 0} className={rowBtn}>
+          <Trash2 className="w-5 h-5 text-rose-500" />
+          <div>
+            <span className="block font-black text-gray-800 text-sm">Delete local records</span>
+            <span className="text-[10px] font-bold text-gray-400">Removes records stored on this device</span>
+          </div>
+        </button>
+      ) : (
+        <div className="bg-rose-50 p-5 rounded-[2rem] border border-rose-100">
+          <p className="text-xs font-bold text-rose-700 mb-3">
+            Delete {records.length} local record{records.length === 1 ? '' : 's'}? {unsynced.length > 0 && `${unsynced.length} have never been synced and will be lost.`}
+          </p>
+          <div className="flex gap-2">
+            <button onClick={handleClear} className="flex-1 bg-rose-600 text-white p-3 rounded-xl text-[10px] font-black uppercase tracking-widest">Delete</button>
+            <button onClick={() => setConfirmClear(false)} className="flex-1 bg-white text-gray-600 p-3 rounded-xl text-[10px] font-black uppercase tracking-widest">Cancel</button>
+          </div>
+        </div>
+      )}
+
+      <h3 className="text-xs font-black text-gray-400 uppercase tracking-widest ml-2 pt-2">Account</h3>
+
+      <button onClick={handleLogout} className={rowBtn}>
+        <LogOut className="w-5 h-5 text-gray-500" />
+        <span className="font-black text-gray-800 text-sm">Sign out</span>
+      </button>
+
+      <p className="text-center text-[8px] font-black text-gray-300 uppercase tracking-[0.2em] pt-4">MycoHub v1.0.0-alpha</p>
+    </div>
+  );
+};
+
+export default SettingsPage;

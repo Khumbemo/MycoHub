@@ -7,6 +7,7 @@ import { useNavigate } from 'react-router-dom';
 const LoginPage: React.FC = () => {
   const { user, login, loginGuest, loginEmergencyBypass, loading } = useAuth();
   const [isLoggingIn, setIsLoggingIn] = React.useState(false);
+  const [error, setError] = React.useState<string | null>(null);
   const navigate = useNavigate();
 
   // Redirect if logged in
@@ -32,13 +33,13 @@ const LoginPage: React.FC = () => {
     }
 
     setIsLoggingIn(true);
+    setError(null);
     try {
       if (type === 'google') await login();
       else await loginGuest();
     } catch (error) {
       console.error("Login failure:", error);
-      alert("Network Error: Entering Offline Mode.");
-      loginEmergencyBypass();
+      setError("Couldn't reach the sign-in service. You can continue offline; records will be saved on this device.");
     } finally {
       setIsLoggingIn(false);
     }
@@ -46,14 +47,6 @@ const LoginPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-emerald-50/30 flex flex-col items-center justify-center p-6 font-sans">
-      {/* FORCE OVERRIDE BUTTON - Always visible, highest level */}
-      <button
-        onClick={() => loginEmergencyBypass()}
-        className="fixed top-12 right-6 z-[100] bg-white/50 backdrop-blur-sm p-2 rounded-full border border-emerald-100 shadow-sm opacity-50 hover:opacity-100 transition-opacity"
-      >
-        <Zap className="w-4 h-4 text-emerald-600" />
-      </button>
-
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
@@ -71,15 +64,17 @@ const LoginPage: React.FC = () => {
           <div className="space-y-4">
             <button
               onClick={() => handleLogin('google')}
-              className="w-full bg-emerald-600 text-white p-4 rounded-3xl flex items-center justify-center gap-3 shadow-lg shadow-emerald-600/20 active:scale-95 transition-all"
+              disabled={isLoggingIn}
+              className="disabled:opacity-60 w-full bg-emerald-600 text-white p-4 rounded-3xl flex items-center justify-center gap-3 shadow-lg shadow-emerald-600/20 active:scale-95 transition-all"
             >
               <LogIn className="w-5 h-5" />
-              <span className="font-black text-xs uppercase tracking-widest">Sign in with Google</span>
+              <span className="font-black text-xs uppercase tracking-widest">{isLoggingIn ? 'Connecting…' : 'Sign in with Google'}</span>
             </button>
 
             <button
               onClick={() => handleLogin('guest')}
-              className="w-full bg-white border-2 border-emerald-50 text-emerald-600 p-4 rounded-3xl font-black text-xs uppercase tracking-widest active:scale-95 transition-all flex items-center justify-center gap-3"
+              disabled={isLoggingIn}
+              className="disabled:opacity-60 w-full bg-white border-2 border-emerald-50 text-emerald-600 p-4 rounded-3xl font-black text-xs uppercase tracking-widest active:scale-95 transition-all flex items-center justify-center gap-3"
             >
               <UserCircle className="w-5 h-5" />
               <span>Continue as Guest</span>
@@ -87,7 +82,7 @@ const LoginPage: React.FC = () => {
 
             <div className="relative py-4 flex items-center gap-4">
                 <div className="h-px bg-gray-100 flex-1" />
-                <span className="text-[8px] font-black text-gray-300 uppercase tracking-widest">Fail Safe</span>
+                <span className="text-[8px] font-black text-gray-300 uppercase tracking-widest">No connection?</span>
                 <div className="h-px bg-gray-100 flex-1" />
             </div>
 
@@ -96,21 +91,27 @@ const LoginPage: React.FC = () => {
               className="w-full bg-amber-500 text-white p-4 rounded-3xl font-black text-xs uppercase tracking-widest shadow-lg shadow-amber-500/20 active:scale-95 transition-all flex items-center justify-center gap-3"
             >
               <Zap className="w-5 h-5 fill-current" />
-              <span>Force Entry</span>
+              <span>Continue Offline</span>
             </button>
           </div>
 
-          <div className="mt-8 flex items-center gap-2 text-rose-500 bg-rose-50 p-4 rounded-2xl">
+          {error && (
+            <p role="alert" className="mt-6 text-xs font-bold text-amber-700 bg-amber-50 p-4 rounded-2xl leading-snug">
+              {error}
+            </p>
+          )}
+
+          <div className="mt-6 flex items-center gap-2 text-rose-500 bg-rose-50 p-4 rounded-2xl">
             <ShieldAlert className="w-4 h-4 flex-shrink-0" />
             <p className="text-[8px] font-bold uppercase tracking-wider leading-tight">
-              Cloud connection is required for GBIF syncing.
-              Offline data will be cached locally.
+              Cloud sync needs a signed-in account.
+              Offline records are stored on this device only.
             </p>
           </div>
         </div>
 
         <p className="mt-8 text-center text-[8px] font-black text-gray-300 uppercase tracking-[0.2em]">
-          v1.0.0-Alpha • Darwin Core v2.4
+          v1.0.0-Alpha • Darwin Core terms
         </p>
       </motion.div>
     </div>

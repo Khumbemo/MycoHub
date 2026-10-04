@@ -155,7 +155,7 @@ export interface Observation {
   media: {
     url: string;
     type: 'HABITAT' | 'PILEUS_TOP' | 'HYMENIUM' | 'STIPE' | 'CROSS_SECTION' | 'SPORE_PRINT' | 'SCALE_BAR' | 'MICROSCOPY';
-    exifData?: any;
+    exifData?: Record<string, unknown>;
   }[];
 
   verificationLog: VerificationLogEntry[];
@@ -181,4 +181,54 @@ export interface Species {
   description?: string;
   distribution?: string[];
   uniteHypothesis?: string;
+}
+
+export type IdentificationConfidence = 'CERTAIN' | 'PROBABLE' | 'POSSIBLE' | 'GENUS_ONLY';
+
+/**
+ * The subset of a Darwin Core occurrence that the field entry form captures.
+ * Stored locally first (IndexedDB) and synced to Firestore when possible.
+ */
+export interface FieldRecord {
+  id: string;
+  userId: string;
+  collectorName: string;
+  collectionNumber: string;
+  timestamp: string; // ISO 8601 (DwC eventDate)
+  status: VerificationStatus;
+  synced: boolean;
+  remoteId?: string;
+
+  locality: string;
+  latitude: number | null; // decimal degrees, WGS84
+  longitude: number | null;
+
+  scientificName: string;
+  identificationConfidence: IdentificationConfidence;
+
+  capDiameterMm: string;
+  capShape: string;
+  capColor: string;
+  hymeniumType: string;
+  gillSpacing: string;
+  attachment: string;
+
+  odor: string;
+  bruising: string;
+  koh: string;
+  feso4: string;
+  taste: string;
+
+  trophicMode: TrophicMode;
+  substrate: SubstrateType;
+  hostSpecies: string;
+  habitatType: HabitatType;
+
+  preserved: boolean;
+  dnaExtracted: boolean;
+  herbariumCode: string;
+  accessionNumber: string;
+
+  photos: Blob[];
+  mediaUrls: string[];
 }
