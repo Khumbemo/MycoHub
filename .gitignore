@@ -1,0 +1,25 @@
+# Dependencies
+node_modules/
+
+# Build caches
+*.tsbuildinfo
+.vite/
+
+# Editor / OS
+.DS_Store
+*.log
+
+# Local env
+.env
+.env.local
+dist-standalone/
+
+# Firebase
+service-account*.json
+.firebase/
+*-debug.log
+firebase-debug*.log
+firestore-debug.log
+test-results/
+playwright-report/
+functions/node_modules/

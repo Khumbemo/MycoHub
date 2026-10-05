@@ -107,3 +107,55 @@
 .animate-page-in {
   animation: page-in 0.3s ease-out forwards;
 }
+
+/* ---------------------------------------------------------------------------
+   Charts (SVG). Colours come from here so both themes stay legible.
+   --------------------------------------------------------------------------- */
+.chart { --chart-ink: #4b5563; --chart-grid: #e5e7eb; --chart-line: #059669; --chart-ref: #6b7280; --chart-surface: #ffffff; }
+.dark .chart { --chart-ink: #cbd5e1; --chart-grid: #1f2f2a; --chart-line: #34d399; --chart-ref: #94a3b8; --chart-surface: #111c19; }
+.chart-grid { stroke: var(--chart-grid); stroke-width: 1; }
+.chart-axis { fill: var(--chart-ink); font-size: 10px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.chart-label { fill: var(--chart-ink); font-size: 10px; font-weight: 800; }
+.chart-line { stroke: var(--chart-line); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.chart-ref { stroke: var(--chart-ref); stroke-width: 1; stroke-dasharray: 4 4; }
+.chart-dot { fill: var(--chart-line); stroke: var(--chart-surface); stroke-width: 2; }
+.chart-crosshair { stroke: var(--chart-ref); stroke-width: 1; }
+
+/* Leaflet panes use z-index up to 1000; keep them below the sticky header and nav. */
+.leaflet-container { z-index: 0; font-family: inherit; }
+
+/* ---------------------------------------------------------------------------
+   Dark mode. Pages use Tailwind's light palette classes directly, so dark mode
+   remaps the handful of surface, border and ink classes they use.
+   --------------------------------------------------------------------------- */
+.dark { color-scheme: dark; }
+.dark body { background-color: #0b1512; color: #e2e8f0; }
+.dark .bg-white, .dark .bg-white\/80, .dark .bg-white\/90, .dark .bg-white\/50 { background-color: #111c19; }
+.dark .bg-gray-50, .dark .bg-gray-50\/50, .dark .bg-gray-50\/70, .dark .bg-gray-100 { background-color: #182622; }
+.dark .bg-emerald-50\/30 { background-color: #0b1512; }
+.dark .border-gray-100, .dark .border-gray-200, .dark .border-emerald-50, .dark .border-emerald-100 { border-color: #1f2f2a; }
+.dark .bg-gray-200 { background-color: #22332e; }
+.dark .text-gray-800, .dark .text-gray-700 { color: #e2e8f0; }
+.dark .text-gray-600, .dark .text-gray-500 { color: #a3b3ad; }
+.dark .text-gray-400 { color: #8a9a94; }
+.dark .placeholder\:text-gray-400::placeholder { color: #6b7d76; }
+/* Tinted callouts: darken the tint, lighten the ink */
+.dark .bg-emerald-50 { background-color: #0f2a22; }
+.dark .bg-amber-50 { background-color: #2c2210; }
+.dark .bg-rose-50, .dark .bg-red-50 { background-color: #2e1418; }
+.dark .bg-blue-50 { background-color: #10203a; }
+.dark .bg-teal-50 { background-color: #0d2726; }
+.dark .bg-violet-50, .dark .bg-purple-50, .dark .bg-indigo-50 { background-color: #1f1a36; }
+.dark .text-emerald-600, .dark .text-emerald-700, .dark .text-emerald-800 { color: #6ee7b7; }
+.dark .text-amber-700, .dark .text-amber-800 { color: #fcd34d; }
+.dark .text-rose-600, .dark .text-rose-700, .dark .text-red-600, .dark .text-red-500 { color: #fda4af; }
+.dark .text-blue-600, .dark .text-blue-700, .dark .text-blue-800 { color: #93c5fd; }
+.dark .text-teal-700, .dark .text-teal-800 { color: #5eead4; }
+.dark .text-violet-600, .dark .text-violet-800, .dark .text-purple-700, .dark .text-indigo-600 { color: #c4b5fd; }
+.dark .shadow-sm, .dark .shadow-xl, .dark .shadow-inner { box-shadow: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; }
+}
+
+:focus-visible { outline: 2px solid #059669; outline-offset: 2px; }
