@@ -12,7 +12,7 @@ concurrency:
 
 jobs:
   checks:
-    name: Lint, typecheck, unit tests, build
+    name: Lint, unit tests, build
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -22,7 +22,6 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run lint
-      - run: npx tsc -b
       - run: npm test
       - run: npm run build
 

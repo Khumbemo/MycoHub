@@ -12,12 +12,19 @@ cp .env.example .env      # fill in the Web app config (see "Firebase setup")
 npm run dev
 ```
 
+## Code
+
+The app is plain JavaScript (ES modules + JSX) with React 18 and Vite. There is no TypeScript.
+The data model is documented as JSDoc typedefs in `src/types/index.js`, so editors such as
+VS Code still show field hints. Code style is set by `.prettierrc.json`
+(`npx prettier --write .`).
+
 ## Scripts
 
 | Command | What it does |
 |---|---|
 | `npm run dev` | Dev server |
-| `npm run build` | Typecheck and production build to `dist/` |
+| `npm run build` | Production build to `dist/` |
 | `npm run build:standalone` | Single self-contained `dist-standalone/mycohub.html` |
 | `npm run lint` | ESLint |
 | `npm test` | Unit tests (Vitest) |
@@ -31,14 +38,14 @@ npm run dev
 | `npm run set-role -- <uid-or-email> <ROLE>` | Give a user a role (see below) |
 | `npm run android:sync` | Build and copy into the Android project |
 
-CI (`.github/workflows/ci.yml`) runs lint, typecheck, unit, rules and e2e tests on
+CI (`.github/workflows/ci.yml`) runs lint, unit, rules, sync, Cloud Function and e2e tests on
 every push and PR. It also builds a debug APK, which you can download from the run's
 **Artifacts** section as `mycohub-debug-apk`.
 
 ## How sync works
 
 Records are saved to IndexedDB first, so the app works with no signal. When you're signed in
-and online, the sync engine (`src/utils/sync.ts`) runs at start-up, when the device comes back
+and online, the sync engine (`src/utils/sync.js`) runs at start-up, when the device comes back
 online, when the app is reopened, and every 5 minutes. Each pass:
 
 1. Deletes server copies of records you deleted on the device.
@@ -128,7 +135,7 @@ The rule lives in `functions/consensus.js`, which both the app and the Cloud Fun
 
 Google sign-in on Android uses `@capacitor-firebase/authentication`. It signs in natively,
 then passes the Google ID token to the Firebase JS SDK (`skipNativeAuth: true` in
-`capacitor.config.ts`), because pop-up sign-in doesn't work in the Android WebView.
+`capacitor.config.json`), because pop-up sign-in doesn't work in the Android WebView.
 
 ```bash
 npm run android:sync
