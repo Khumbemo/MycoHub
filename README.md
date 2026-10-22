@@ -122,14 +122,41 @@ The rule lives in `functions/consensus.js`, which both the app and the Cloud Fun
 2. **Authentication → Sign-in method**: enable Google, and Anonymous if you want guest
    sign-in. Under **Settings → Authorized domains**, add every domain the web app is
    served from.
-3. **Deploy the rules**: `npx firebase login`, then `npm run deploy:rules`. Until you do
-   this, the live project keeps whatever rules it has now.
+3. **Deploy the rules**, either from GitHub (see "Deploying security rules" below) or from
+   your computer with `npx firebase login`, then `npm run deploy:rules`. Until you do this,
+   the live project keeps whatever rules it has now.
 4. **Android Google sign-in**: add your signing key's SHA-1 to the Android app in Project
    settings, then download the new `google-services.json` into `android/app/`.
    - Debug key: `keytool -list -v -alias androiddebugkey -keystore ~/.android/debug.keystore -storepass android`
    - The APK built by CI is signed with that runner's own throwaway debug key, so Google
      sign-in only works in it if you register that key too. For real use, set up a release
      keystore.
+
+## Deploying security rules
+
+The **Deploy security rules** workflow (`.github/workflows/deploy-rules.yml`) deploys the rules
+on `main` to `mycohub-mutha`. It runs only when started by hand, and only after the rules tests
+pass against the emulator.
+
+One-time setup:
+
+1. In Google Cloud console → **IAM & Admin → Service accounts** (project `mycohub-mutha`),
+   create a service account, for example `rules-deployer`, with these roles:
+   - **Firebase Rules Admin** (`roles/firebaserules.admin`): publish the rules.
+   - **Service Usage Consumer** (`roles/serviceusage.serviceUsageConsumer`): lets the CLI
+     check that the APIs are enabled.
+   - **Cloud Storage for Firebase Viewer** (`roles/firebasestorage.viewer`): only needed to
+     deploy the Storage rules (the CLI looks up the default bucket).
+
+   These roles can change security rules but cannot read or write your data.
+2. On that account, open **Keys → Add key → JSON** to download the key.
+3. In GitHub → repository **Settings → Secrets and variables → Actions → New repository
+   secret**, name it `FIREBASE_SERVICE_ACCOUNT` and paste in the whole JSON file. Then delete
+   the downloaded file.
+
+To deploy: open **Actions → Deploy security rules → Run workflow**, choose the branch `main`
+and the target (Firestore, Storage or both), and run it. The run log shows which service
+account and commit were used. To revoke access, delete the key on the service account.
 
 ## Android
 
