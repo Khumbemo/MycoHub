@@ -48,17 +48,21 @@ const LoginPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-emerald-50/30 flex flex-col items-center justify-center p-6 font-sans">
-      <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="w-full max-w-sm">
-        <div className="flex flex-col items-center mb-10">
-          <div className="w-20 h-20 bg-emerald-600 rounded-[2rem] flex items-center justify-center shadow-2xl shadow-emerald-500/40 mb-6">
+    <div className="min-h-dvh bg-emerald-50/30 flex flex-col items-center justify-center p-6 short:py-4 font-sans pt-[calc(1.5rem+env(safe-area-inset-top,0px))] pb-[calc(1.5rem+env(safe-area-inset-bottom,0px))]">
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        className="w-full max-w-sm short:max-w-3xl short:grid short:grid-cols-2 short:gap-8 short:items-center lg:max-w-4xl lg:grid lg:grid-cols-2 lg:gap-16 lg:items-center"
+      >
+        <div className="flex flex-col items-center mb-10 short:mb-0 lg:mb-0">
+          <div className="w-20 h-20 short:w-14 short:h-14 lg:w-28 lg:h-28 bg-emerald-600 rounded-[2rem] flex items-center justify-center shadow-2xl shadow-emerald-500/40 mb-6 short:mb-3">
             <span className="text-white font-black text-2xl tracking-widest">MH</span>
           </div>
-          <h1 className="text-4xl font-black text-gray-800 tracking-tighter mb-1">MycoHub</h1>
+          <h1 className="text-4xl lg:text-6xl font-black text-gray-800 tracking-tighter mb-1">MycoHub</h1>
           <p className="text-[10px] font-bold text-emerald-600 uppercase tracking-[0.3em]">Scientific Laboratory</p>
         </div>
 
-        <div className="bg-white p-8 rounded-[2.5rem] shadow-xl border border-gray-100">
+        <div className="bg-white p-8 short:p-5 rounded-[2.5rem] short:rounded-3xl shadow-xl border border-gray-100">
           <div className="space-y-4">
             <button
               onClick={() => handleLogin('google')}
@@ -109,7 +113,7 @@ const LoginPage = () => {
           </div>
         </div>
 
-        <p className="mt-8 text-center text-[10px] font-black text-gray-500 uppercase tracking-[0.2em]">
+        <p className="mt-8 short:mt-3 col-span-2 text-center text-[10px] font-black text-gray-500 uppercase tracking-[0.2em]">
           v1.0.0-Alpha • Darwin Core terms
         </p>
       </motion.div>

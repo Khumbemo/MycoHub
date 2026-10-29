@@ -91,7 +91,7 @@ const CommunityPage = () => {
         </p>
       </div>
 
-      <div className="grid grid-cols-3 gap-3 mb-6">
+      <div className="grid grid-cols-3 gap-3 mb-6 lg:max-w-3xl">
         {['UNVERIFIED', 'COMMUNITY_GRADE', 'RESEARCH_GRADE'].map((s) => (
           <div
             key={s}
@@ -127,12 +127,12 @@ const CommunityPage = () => {
         ))}
       </div>
 
-      <div className="space-y-4">
+      <div className="grid gap-4 md:grid-cols-2 2xl:grid-cols-3 items-start">
         {shown.map(({ r }) => (
           <VerificationTicket key={r.id} record={r} />
         ))}
         {records && shown.length === 0 && (
-          <div className="bg-white p-8 rounded-[2rem] border border-gray-100 text-center">
+          <div className="col-span-full bg-white p-8 rounded-[2rem] border border-gray-100 text-center">
             <Leaf className="w-8 h-8 text-emerald-200 mx-auto mb-3" />
             <p className="text-sm font-bold text-gray-600 mb-4">
               {list.length === 0 ? 'No records to review yet.' : 'No records match this filter.'}
