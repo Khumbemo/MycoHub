@@ -18,6 +18,9 @@ import { RAIL_QUERY, useMediaQuery } from '../../utils/layout';
 import { cn } from '../../utils/cn';
 import { motion, AnimatePresence } from 'framer-motion';
 import SafetyDisclaimer from '../SafetyDisclaimer';
+import BrandMark from '../BrandMark';
+import MushroomPlate from '../MushroomPlate';
+import { useBackground } from '../../utils/background';
 
 // `label` is the short name for the phone tab bar and the rail; `title` is used
 // in the full sidebar on wide screens.
@@ -40,16 +43,7 @@ const subPageTitle = (pathname) => {
   return undefined;
 };
 
-const Logo = ({ className }) => (
-  <div
-    className={cn(
-      'w-9 h-9 bg-gradient-to-br from-emerald-400 to-teal-600 rounded-xl flex items-center justify-center shadow-lg shadow-emerald-500/30 flex-shrink-0',
-      className,
-    )}
-  >
-    <span className="text-white font-black text-[10px] tracking-widest">MH</span>
-  </div>
-);
+const Logo = BrandMark;
 
 /** Offline / syncing chips, shown in the phone header and the sidebar. */
 const StatusChips = ({ compact = false }) => {
@@ -121,7 +115,9 @@ const TopHeader = () => {
           <div className="flex items-center gap-2.5 min-w-0">
             <Logo />
             <div className="min-w-0">
-              <span className="font-black text-lg text-gray-800 tracking-tight leading-none block">MycoHub</span>
+              <span className="font-display font-semibold text-xl text-ink tracking-tight leading-none block">
+                MycoHub
+              </span>
               <span className="text-[10px] text-gray-500 font-mono font-bold uppercase tracking-widest">
                 Research v1.0
               </span>
@@ -222,7 +218,7 @@ const SideNav = () => {
       <NavLink to="/" aria-label="MycoHub home" className="flex items-center gap-3 mb-6 short:mb-2 wide:px-2">
         <Logo className="short:w-8 short:h-8" />
         <span className="hidden wide:block min-w-0">
-          <span className="font-black text-lg text-gray-800 tracking-tight leading-none block">MycoHub</span>
+          <span className="font-display font-semibold text-xl text-ink tracking-tight leading-none block">MycoHub</span>
           <span className="text-[10px] text-gray-500 font-mono font-bold uppercase tracking-widest">Research v1.0</span>
         </span>
       </NavLink>
@@ -263,6 +259,20 @@ const SideNav = () => {
         </NavLink>
       </div>
     </aside>
+  );
+};
+
+/** Faint botanical plate behind the pages (Illustration background only). */
+const PlateWatermark = () => {
+  const { mode } = useBackground();
+  if (mode !== 'illustration') return null;
+  return (
+    <div
+      className="pointer-events-none fixed bottom-[var(--nav-bottom)] right-0 z-0 w-[min(70vw,30rem)] opacity-[0.07] dark:opacity-[0.09] translate-x-[12%] translate-y-[6%]"
+      aria-hidden="true"
+    >
+      <MushroomPlate labels={false} caption={false} />
+    </div>
   );
 };
 
@@ -309,7 +319,8 @@ const MainLayout = () => {
       )}
     >
       {hasRail && <SideNav />}
-      <div className="flex flex-col min-h-dvh pb-[var(--nav-bottom)] pr-[env(safe-area-inset-right,0px)]">
+      <PlateWatermark />
+      <div className="relative z-10 flex flex-col min-h-dvh pb-[var(--nav-bottom)] pr-[env(safe-area-inset-right,0px)]">
         <SafetyDisclaimer />
         <TopHeader />
         <main

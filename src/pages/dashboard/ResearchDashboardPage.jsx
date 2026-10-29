@@ -16,7 +16,7 @@ const metricColors = {
 
 const LabMetric = ({ label, value, icon: Icon, color, hint, span = false }) => (
   <div
-    className={`bg-white p-5 rounded-[2rem] border border-gray-100 shadow-sm flex items-center gap-4 min-w-0 ${span ? 'col-span-2 lg:col-span-1' : ''}`}
+    className={`bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex items-center gap-4 min-w-0 ${span ? 'col-span-2 lg:col-span-1' : ''}`}
   >
     <div className={`p-3 rounded-2xl shadow-sm ${metricColors[color]}`}>
       <Icon className="w-5 h-5" />
@@ -167,7 +167,7 @@ const ResearchDashboardPage = () => {
 
       <div className="grid gap-8 mb-8 xl:grid-cols-2 xl:items-start">
         {m.curve.length > 1 && (
-          <section className="bg-white p-6 rounded-[2rem] border border-gray-100">
+          <section className="bg-white p-6 rounded-2xl border border-gray-100">
             <h3 className="font-black text-gray-800 uppercase tracking-wider text-sm">Species accumulation</h3>
             <p className="text-[11px] font-bold text-gray-500 mb-3">
               A curve still climbing at its end means more species remain to be found.
@@ -176,7 +176,7 @@ const ResearchDashboardPage = () => {
           </section>
         )}
 
-        <div className="bg-gray-900 p-8 rounded-[3rem] text-white shadow-2xl relative overflow-hidden">
+        <div className="bg-gray-900 p-8 rounded-3xl text-white shadow-2xl relative overflow-hidden">
           <div className="relative z-10">
             <h3 className="text-xl font-black tracking-tight mb-2 italic">Phenology</h3>
             <p className="text-xs text-gray-500 font-bold mb-6">Records per month of collection</p>
@@ -214,14 +214,14 @@ const ResearchDashboardPage = () => {
           Most recorded taxa
         </h4>
         {m.top.length === 0 && (
-          <p className="col-span-full bg-white p-6 rounded-[2rem] border border-gray-100 text-sm font-bold text-gray-600">
+          <p className="col-span-full bg-white p-6 rounded-2xl border border-gray-100 text-sm font-bold text-gray-600">
             Save field records to see diversity metrics. Each distinct scientific name counts as one taxon.
           </p>
         )}
         {m.top.map(([name, n]) => (
           <div
             key={name}
-            className="bg-white p-5 rounded-[2rem] border border-gray-100 flex justify-between items-center gap-4"
+            className="bg-white p-5 rounded-2xl border border-gray-100 flex justify-between items-center gap-4"
           >
             <span className="font-black italic text-gray-800 truncate">{name}</span>
             <span className="text-xs font-black text-emerald-700 tabular-nums flex-shrink-0">

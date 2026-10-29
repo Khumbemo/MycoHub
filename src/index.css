@@ -1,5 +1,3 @@
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Space+Mono:ital,wght@0,400;0,700;1,400;1,700&display=swap');
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -18,19 +16,10 @@
   }
 
   body {
-    font-family: 'Outfit', sans-serif;
-    @apply bg-[#f8faf9] text-[#064e3b] dark:bg-[#0f172a] dark:text-emerald-50 transition-colors duration-300;
-    background-image: 
-      radial-gradient(circle at 2px 2px, rgba(6, 78, 59, 0.03) 1px, transparent 0);
-    background-size: 24px 24px;
-    background-attachment: fixed;
+    @apply font-sans bg-paper text-ink transition-colors duration-300;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-  }
-
-  .dark body {
-    background-image:
-      radial-gradient(circle at 2px 2px, rgba(52, 211, 153, 0.03) 1px, transparent 0);
+    text-rendering: optimizeLegibility;
   }
 }
 
@@ -47,7 +36,7 @@
     border: 1px solid var(--glass-border);
     box-shadow: var(--glass-shadow);
   }
-  
+
   .glass-pill {
     @apply transition-colors duration-300 bg-white dark:bg-slate-900/90;
     backdrop-filter: blur(24px);
@@ -80,15 +69,27 @@
 }
 
 @keyframes float {
-  0% { transform: translateY(0px); }
-  50% { transform: translateY(-5px); }
-  100% { transform: translateY(0px); }
+  0% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-5px);
+  }
+  100% {
+    transform: translateY(0px);
+  }
 }
 
 @keyframes pulse-glow {
-  0% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.4); }
-  70% { box-shadow: 0 0 0 10px rgba(34, 197, 94, 0); }
-  100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); }
+  0% {
+    box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.4);
+  }
+  70% {
+    box-shadow: 0 0 0 10px rgba(34, 197, 94, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(34, 197, 94, 0);
+  }
 }
 
 .animate-float {
@@ -100,8 +101,14 @@
 }
 
 @keyframes page-in {
-  from { opacity: 0; transform: translateY(8px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .animate-page-in {
@@ -111,61 +118,339 @@
 /* ---------------------------------------------------------------------------
    Charts (SVG). Colours come from here so both themes stay legible.
    --------------------------------------------------------------------------- */
-.chart { --chart-ink: #4b5563; --chart-grid: #e5e7eb; --chart-line: #059669; --chart-ref: #6b7280; --chart-surface: #ffffff; }
-.dark .chart { --chart-ink: #cbd5e1; --chart-grid: #1f2f2a; --chart-line: #34d399; --chart-ref: #94a3b8; --chart-surface: #111c19; }
-.chart-grid { stroke: var(--chart-grid); stroke-width: 1; }
-.chart-axis { fill: var(--chart-ink); font-size: 10px; font-weight: 700; font-variant-numeric: tabular-nums; }
-.chart-label { fill: var(--chart-ink); font-size: 10px; font-weight: 800; }
-.chart-line { stroke: var(--chart-line); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
-.chart-ref { stroke: var(--chart-ref); stroke-width: 1; stroke-dasharray: 4 4; }
-.chart-dot { fill: var(--chart-line); stroke: var(--chart-surface); stroke-width: 2; }
-.chart-crosshair { stroke: var(--chart-ref); stroke-width: 1; }
+.chart {
+  --chart-ink: #535b50;
+  --chart-grid: #daded6;
+  --chart-line: #2d5c41;
+  --chart-ref: #6a7366;
+  --chart-surface: #ffffff;
+}
+.dark .chart {
+  --chart-ink: #c9d3cc;
+  --chart-grid: #24332b;
+  --chart-line: #9cc7a8;
+  --chart-ref: #8e9a92;
+  --chart-surface: #141e19;
+}
+.chart-grid {
+  stroke: var(--chart-grid);
+  stroke-width: 1;
+}
+.chart-axis {
+  fill: var(--chart-ink);
+  font-family: theme('fontFamily.mono');
+  font-size: 10px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+.chart-label {
+  fill: var(--chart-ink);
+  font-family: theme('fontFamily.mono');
+  font-size: 10px;
+  font-weight: 600;
+}
+.chart-line {
+  stroke: var(--chart-line);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.chart-ref {
+  stroke: var(--chart-ref);
+  stroke-width: 1;
+  stroke-dasharray: 4 4;
+}
+.chart-dot {
+  fill: var(--chart-line);
+  stroke: var(--chart-surface);
+  stroke-width: 2;
+}
+.chart-crosshair {
+  stroke: var(--chart-ref);
+  stroke-width: 1;
+}
 
 /* Leaflet panes use z-index up to 1000; keep them below the sticky header and nav. */
-.leaflet-container { z-index: 0; font-family: inherit; }
+.leaflet-container {
+  z-index: 0;
+  font-family: inherit;
+}
 
 /* ---------------------------------------------------------------------------
    Dark mode. Pages use Tailwind's light palette classes directly, so dark mode
    remaps the handful of surface, border and ink classes they use.
    --------------------------------------------------------------------------- */
-.dark { color-scheme: dark; }
-.dark body { background-color: #0b1512; color: #e2e8f0; }
-.dark .bg-white, .dark .bg-white\/80, .dark .bg-white\/90, .dark .bg-white\/50 { background-color: #111c19; }
-.dark .bg-gray-50, .dark .bg-gray-50\/50, .dark .bg-gray-50\/70, .dark .bg-gray-100 { background-color: #182622; }
-.dark .bg-emerald-50\/30 { background-color: #0b1512; }
-.dark .border-gray-100, .dark .border-gray-200, .dark .border-emerald-50, .dark .border-emerald-100 { border-color: #1f2f2a; }
-.dark .bg-gray-200 { background-color: #22332e; }
-.dark .text-gray-800, .dark .text-gray-700 { color: #e2e8f0; }
-.dark .text-gray-600, .dark .text-gray-500 { color: #a3b3ad; }
-.dark .text-gray-400 { color: #8a9a94; }
-.dark .placeholder\:text-gray-400::placeholder { color: #6b7d76; }
+.dark {
+  color-scheme: dark;
+}
+.dark body {
+  background-color: #0e1612;
+  color: #e3e9e4;
+}
+.dark .bg-white,
+.dark .bg-white\/80,
+.dark .bg-white\/90,
+.dark .bg-white\/50 {
+  background-color: #141e19;
+}
+.dark .bg-gray-50,
+.dark .bg-gray-50\/50,
+.dark .bg-gray-50\/70,
+.dark .bg-gray-100,
+.dark .bg-paper {
+  background-color: #1a2620;
+}
+.dark .bg-emerald-50\/30 {
+  background-color: #0e1612;
+}
+.dark .border-gray-100,
+.dark .border-gray-200,
+.dark .border-emerald-50,
+.dark .border-emerald-100 {
+  border-color: #24332b;
+}
+.dark .bg-gray-200 {
+  background-color: #22332e;
+}
+.dark .text-gray-800,
+.dark .text-gray-700,
+.dark .text-ink {
+  color: #e3e9e4;
+}
+.dark .text-gray-600,
+.dark .text-gray-500 {
+  color: #a3b0a8;
+}
+.dark .text-gray-400 {
+  color: #8a9a94;
+}
+.dark .placeholder\:text-gray-400::placeholder {
+  color: #6b7d76;
+}
 /* Tinted callouts: darken the tint, lighten the ink */
-.dark .bg-emerald-50 { background-color: #0f2a22; }
-.dark .bg-amber-50 { background-color: #2c2210; }
-.dark .bg-rose-50, .dark .bg-red-50 { background-color: #2e1418; }
-.dark .bg-blue-50 { background-color: #10203a; }
-.dark .bg-teal-50 { background-color: #0d2726; }
-.dark .bg-violet-50, .dark .bg-purple-50, .dark .bg-indigo-50 { background-color: #1f1a36; }
-.dark .text-emerald-600, .dark .text-emerald-700, .dark .text-emerald-800 { color: #6ee7b7; }
-.dark .text-amber-700, .dark .text-amber-800 { color: #fcd34d; }
-.dark .text-rose-600, .dark .text-rose-700, .dark .text-red-600, .dark .text-red-500 { color: #fda4af; }
-.dark .text-blue-600, .dark .text-blue-700, .dark .text-blue-800 { color: #93c5fd; }
-.dark .text-teal-700, .dark .text-teal-800 { color: #5eead4; }
-.dark .text-violet-600, .dark .text-violet-800, .dark .text-purple-700, .dark .text-indigo-600 { color: #c4b5fd; }
-.dark .shadow-sm, .dark .shadow-xl, .dark .shadow-inner { box-shadow: none; }
-
-@media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; }
+.dark .bg-emerald-50 {
+  background-color: #13291e;
+}
+.dark .bg-amber-50 {
+  background-color: #2c2210;
+}
+.dark .bg-rose-50,
+.dark .bg-red-50 {
+  background-color: #2e1418;
+}
+.dark .bg-blue-50 {
+  background-color: #10203a;
+}
+.dark .bg-teal-50 {
+  background-color: #0d2726;
+}
+.dark .bg-violet-50,
+.dark .bg-purple-50,
+.dark .bg-indigo-50 {
+  background-color: #1f1a36;
+}
+.dark .text-emerald-600,
+.dark .text-emerald-700,
+.dark .text-emerald-800 {
+  color: #9cc7a8;
+}
+.dark .text-amber-700,
+.dark .text-amber-800 {
+  color: #fcd34d;
+}
+.dark .text-rose-600,
+.dark .text-rose-700,
+.dark .text-red-600,
+.dark .text-red-500 {
+  color: #fda4af;
+}
+.dark .text-blue-600,
+.dark .text-blue-700,
+.dark .text-blue-800 {
+  color: #93c5fd;
+}
+.dark .text-teal-700,
+.dark .text-teal-800 {
+  color: #5eead4;
+}
+.dark .text-violet-600,
+.dark .text-violet-800,
+.dark .text-purple-700,
+.dark .text-indigo-600 {
+  color: #c4b5fd;
+}
+.dark .shadow-sm,
+.dark .shadow-xl,
+.dark .shadow-inner {
+  box-shadow: none;
 }
 
-:focus-visible { outline: 2px solid #059669; outline-offset: 2px; }
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+:focus-visible {
+  outline: 2px solid #3f7454;
+  outline-offset: 2px;
+}
 
 /* ---------------------------------------------------------------------------
    Responsive shell. --nav-bottom is the space reserved for the phone's bottom
    tab bar; it is 0 whenever the side rail is shown. The media query must match
    RAIL_QUERY in tailwind.config.js.
    --------------------------------------------------------------------------- */
-:root { --nav-bottom: calc(5.5rem + env(safe-area-inset-bottom, 0px)); }
+:root {
+  --nav-bottom: calc(5.5rem + env(safe-area-inset-bottom, 0px));
+}
 @media (min-width: 768px), (min-width: 560px) and (max-height: 520px) and (orientation: landscape) {
-  :root { --nav-bottom: 0px; }
+  :root {
+    --nav-bottom: 0px;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   Type roles (appended after Tailwind's utilities so they take precedence).
+   - Headings: Newsreader, a field-guide serif, at a calm weight.
+   - Italic text: in this app that is taxon names, set in the serif italic as
+     binomials conventionally are.
+   - Uppercase labels, buttons and badges: IBM Plex Mono, like specimen labels.
+   - Figures (tabular-nums): Plex Mono, so columns of numbers align.
+   --------------------------------------------------------------------------- */
+h1,
+h2 {
+  font-family: theme('fontFamily.display');
+  font-weight: 600;
+  letter-spacing: -0.015em;
+  font-optical-sizing: auto;
+}
+/* Older heading classes (font-black, tracking-tighter) would make the serif
+   heavy and cramped; these selectors are specific enough to win. */
+h1[class],
+h2[class] {
+  font-weight: 600;
+  letter-spacing: -0.012em;
+}
+.italic,
+i,
+em {
+  font-family: theme('fontFamily.display');
+}
+.italic.font-black,
+.italic.font-bold {
+  font-weight: 600;
+}
+.uppercase {
+  font-family: theme('fontFamily.mono');
+  font-weight: 600;
+  letter-spacing: 0.05em;
+}
+.tabular-nums {
+  font-family: theme('fontFamily.mono');
+  font-weight: 500;
+  letter-spacing: -0.01em;
+}
+::placeholder {
+  font-weight: 400;
+}
+
+/* ---------------------------------------------------------------------------
+   Botanical plate (src/components/MushroomPlate.jsx)
+   --------------------------------------------------------------------------- */
+.plate {
+  --plate-ink: #16211a;
+  --plate-muted: #535b50;
+}
+.dark .plate {
+  --plate-ink: #dde5df;
+  --plate-muted: #a3b0a8;
+}
+.plate-line {
+  stroke: var(--plate-ink);
+  stroke-opacity: 0.75;
+  stroke-width: 1.1;
+  stroke-linejoin: round;
+}
+.plate-fine {
+  stroke: var(--plate-ink);
+  stroke-opacity: 0.32;
+  stroke-width: 0.7;
+  stroke-linecap: round;
+}
+.plate-fine--light {
+  stroke: #fff;
+  stroke-opacity: 0.45;
+}
+.plate-ring {
+  stroke: var(--plate-ink);
+  stroke-opacity: 0.45;
+  stroke-width: 0.9;
+  stroke-dasharray: 3 2.5;
+}
+.plate-soil {
+  stroke: var(--plate-muted);
+  stroke-opacity: 0.5;
+  stroke-width: 1;
+  stroke-linecap: round;
+}
+.plate-leader {
+  stroke: var(--plate-muted);
+  stroke-width: 0.8;
+}
+.plate-rule {
+  stroke: var(--plate-muted);
+  stroke-opacity: 0.5;
+  stroke-width: 0.8;
+}
+.plate-label {
+  fill: var(--plate-muted);
+  font-family: theme('fontFamily.mono');
+  font-size: 10.5px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+}
+.plate-label--warn {
+  fill: #b4352b;
+}
+.dark .plate-label--warn {
+  fill: #f0938a;
+}
+.plate-caption {
+  fill: var(--plate-ink);
+  font-family: theme('fontFamily.display');
+  font-size: 17px;
+}
+.plate-caption-plate {
+  font-family: theme('fontFamily.mono');
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  fill: var(--plate-muted);
+}
+.plate-caption-name {
+  font-style: italic;
+  font-weight: 600;
+}
+.plate-caption-auth {
+  font-size: 14px;
+  fill: var(--plate-muted);
+}
+
+/* Dark-mode mappings for the redesign's surfaces and hairlines. */
+.dark .bg-white\/70 {
+  background-color: rgb(26 38 32 / 0.7);
+}
+.dark .border-gray-300,
+.dark .border-gray-200\/80,
+.dark .border-gray-200\/70 {
+  border-color: #2c3b33;
+}
+.dark .hover\:border-emerald-600:hover {
+  border-color: #5f9170;
 }

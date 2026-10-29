@@ -1,6 +1,19 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { LogOut, Download, RefreshCw, UserCircle2, CloudOff, Trash2, Sun, Moon, Monitor } from 'lucide-react';
+import {
+  LogOut,
+  Download,
+  RefreshCw,
+  UserCircle2,
+  CloudOff,
+  Trash2,
+  Sun,
+  Moon,
+  Monitor,
+  ImagePlus,
+} from 'lucide-react';
+import MushroomPlate from '../../components/MushroomPlate';
+import { clearBackgroundPhoto, setBackgroundMode, setBackgroundPhoto, useBackground } from '../../utils/background';
 import { useAuth } from '../../contexts/AuthContext';
 import { localDb } from '../../utils/db';
 import { useLocalRecords } from '../../utils/observations';
@@ -16,6 +29,8 @@ const SettingsPage = () => {
   const sync = useSyncState();
   const [confirmClear, setConfirmClear] = useState(false);
   const [theme, setTheme] = useState(getThemePref);
+  const bg = useBackground();
+  const [photoBusy, setPhotoBusy] = useState(false);
 
   const unsynced = records.filter(
     (r) => !r.synced || r.dirty || r.statusDirty || r.identifications.some((i) => i.pending),
@@ -70,11 +85,11 @@ const SettingsPage = () => {
   };
 
   const rowBtn =
-    'w-full bg-white p-5 rounded-[2rem] border border-gray-100 flex items-center gap-4 text-left disabled:opacity-50';
+    'w-full bg-white p-5 rounded-2xl border border-gray-100 flex items-center gap-4 text-left disabled:opacity-50';
 
   return (
     <div className="pb-12 space-y-4 max-w-2xl mx-auto">
-      <section className="bg-white p-6 rounded-[2rem] border border-gray-100 flex items-center gap-4">
+      <section className="bg-white p-6 rounded-2xl border border-gray-100 flex items-center gap-4">
         <div className="w-14 h-14 bg-emerald-50 rounded-2xl flex items-center justify-center flex-shrink-0">
           <UserCircle2 className="w-8 h-8 text-emerald-600" />
         </div>
@@ -140,7 +155,7 @@ const SettingsPage = () => {
           </div>
         </button>
       ) : (
-        <div className="bg-rose-50 p-5 rounded-[2rem] border border-rose-100">
+        <div className="bg-rose-50 p-5 rounded-2xl border border-rose-100">
           <p className="text-xs font-bold text-rose-700 mb-3">
             Delete {records.length} local record{records.length === 1 ? '' : 's'}?{' '}
             {unsynced.length > 0 && `${unsynced.length} have never been synced and will be lost.`}
@@ -184,6 +199,91 @@ const SettingsPage = () => {
             <Icon className="w-5 h-5" /> {text}
           </button>
         ))}
+      </div>
+
+      <h3 className="text-xs text-gray-500 uppercase ml-2 pt-2" id="bg-label">
+        Background
+      </h3>
+      <div role="radiogroup" aria-labelledby="bg-label" className="grid grid-cols-3 gap-2">
+        {[
+          ['illustration', 'Illustration'],
+          ['photo', 'My photo'],
+          ['plain', 'Plain'],
+        ].map(([value, text]) => {
+          const selected = bg.chosen === value && (value !== 'photo' || bg.hasPhoto);
+          return (
+            <button
+              key={value}
+              role="radio"
+              aria-checked={selected}
+              onClick={() =>
+                value === 'photo' && !bg.hasPhoto
+                  ? document.getElementById('bg-photo')?.click()
+                  : setBackgroundMode(value)
+              }
+              className={`p-2 rounded-2xl border flex flex-col items-stretch gap-2 text-[11px] uppercase text-center ${
+                selected
+                  ? 'border-emerald-700 ring-2 ring-emerald-700/30 bg-white text-ink'
+                  : 'bg-white text-gray-600 border-gray-200'
+              }`}
+            >
+              <span className="block aspect-[4/3] rounded-xl overflow-hidden bg-emerald-50 relative">
+                {value === 'illustration' && (
+                  <MushroomPlate labels={false} caption={false} className="absolute inset-0 w-full h-full p-1" />
+                )}
+                {value === 'photo' &&
+                  (bg.photoUrl ? (
+                    <img src={bg.photoUrl} alt="" className="absolute inset-0 w-full h-full object-cover" />
+                  ) : (
+                    <span className="absolute inset-0 flex items-center justify-center text-gray-500">
+                      <ImagePlus className="w-6 h-6" />
+                    </span>
+                  ))}
+                {value === 'plain' && <span className="absolute inset-0 bg-paper" />}
+              </span>
+              {text}
+            </button>
+          );
+        })}
+      </div>
+      <div className="flex flex-wrap items-center gap-2">
+        <label
+          htmlFor="bg-photo"
+          className="cursor-pointer inline-flex items-center gap-2 bg-white border border-gray-300 hover:border-emerald-600 px-4 py-2.5 rounded-xl text-xs uppercase text-ink"
+        >
+          <ImagePlus className="w-4 h-4" /> {photoBusy ? 'Processing…' : bg.hasPhoto ? 'Change photo' : 'Choose photo'}
+        </label>
+        <input
+          id="bg-photo"
+          type="file"
+          accept="image/*"
+          className="sr-only"
+          onChange={async (e) => {
+            const file = e.target.files?.[0];
+            e.target.value = '';
+            if (!file) return;
+            setPhotoBusy(true);
+            try {
+              await setBackgroundPhoto(file);
+              setMessage('Background photo set. It shows on the sign-in screen and the dashboard.');
+            } catch {
+              setMessage('Could not read that image. Try a JPEG or PNG.');
+            } finally {
+              setPhotoBusy(false);
+            }
+          }}
+        />
+        {bg.hasPhoto && (
+          <button
+            onClick={() => clearBackgroundPhoto()}
+            className="px-3 py-2.5 rounded-xl text-xs uppercase text-gray-600 hover:text-red-700"
+          >
+            Remove photo
+          </button>
+        )}
+        <p className="basis-full text-[12.5px] text-gray-500 ml-1">
+          Used on the sign-in screen and the dashboard. Stored on this device only.
+        </p>
       </div>
 
       <h3 className="text-xs font-black text-gray-500 uppercase tracking-widest ml-2 pt-2">Account</h3>

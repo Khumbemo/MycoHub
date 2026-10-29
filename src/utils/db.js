@@ -35,6 +35,10 @@ export class MycoHubDB extends Dexie {
             r.nextSyncAt ??= 0;
           }),
       );
+    // Device preferences that hold files (e.g. the background photo).
+    this.version(4).stores({
+      prefs: 'key',
+    });
   }
 }
 

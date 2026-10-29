@@ -36,7 +36,7 @@ const ChatPage = () => {
 
   return (
     <div className="flex flex-col w-full max-w-3xl mx-auto">
-      <div className="bg-emerald-600 p-6 short:p-3 rounded-t-[2.5rem] short:rounded-t-3xl shadow-lg flex items-center gap-4">
+      <div className="bg-emerald-600 p-6 short:p-3 rounded-t-2xl short:rounded-t-3xl shadow-lg flex items-center gap-4">
         <div className="w-12 h-12 short:w-9 short:h-9 bg-white/20 rounded-2xl flex items-center justify-center backdrop-blur-md flex-shrink-0">
           <Bot className="text-white w-7 h-7" />
         </div>
@@ -89,7 +89,7 @@ const ChatPage = () => {
           ))}
         </div>
 
-        <div className="p-4 short:p-2 bg-white rounded-b-[2.5rem] short:rounded-b-3xl border-t border-emerald-50 shadow-inner">
+        <div className="p-4 short:p-2 bg-white rounded-b-2xl short:rounded-b-3xl border-t border-emerald-50 shadow-inner">
           <div className="flex gap-2 bg-emerald-50 p-2 rounded-2xl">
             <input
               type="text"
@@ -106,7 +106,7 @@ const ChatPage = () => {
             <button
               onClick={() => send(input)}
               aria-label="Send"
-              className="bg-emerald-600 text-white p-3 rounded-xl shadow-lg shadow-emerald-600/20 active:scale-90 transition-all"
+              className="bg-emerald-600 text-white p-3 rounded-xl shadow-lg active:scale-90 transition-all"
             >
               <Send className="w-4 h-4" />
             </button>

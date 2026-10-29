@@ -5,7 +5,7 @@ import { SPECIES } from '../../data/species';
 const SpeciesCard = ({ species: s }) => {
   const [open, setOpen] = useState(false);
   return (
-    <div className="bg-white p-6 rounded-[2rem] shadow-sm border border-gray-100">
+    <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
       <div className="flex justify-between items-start gap-3 mb-2">
         <div className="min-w-0">
           <h3 className="text-lg font-black italic text-gray-800 leading-tight">{s.scientificName}</h3>
@@ -100,7 +100,7 @@ const SpeciesDBPage = () => {
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Scientific name, common name, family, synonym…"
-          className="w-full bg-white border-none rounded-[2rem] py-4 pl-14 pr-6 text-sm font-bold shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
+          className="w-full bg-white border-none rounded-2xl py-4 pl-14 pr-6 text-sm font-bold shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
         />
       </div>
 
@@ -109,7 +109,7 @@ const SpeciesDBPage = () => {
           <SpeciesCard key={s.id} species={s} />
         ))}
         {results.length === 0 && (
-          <div className="col-span-full bg-white p-6 rounded-[2rem] border border-gray-100 text-sm font-bold text-gray-500">
+          <div className="col-span-full bg-white p-6 rounded-2xl border border-gray-100 text-sm font-bold text-gray-500">
             No match in the offline list.{' '}
             <a
               className="text-emerald-600 underline"

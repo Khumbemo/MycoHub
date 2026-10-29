@@ -59,7 +59,7 @@ test('dashboard and lab metrics reflect saved records', async ({ page }) => {
   await saveRecord(page, { number: 'D-2', name: 'Trametes versicolor', locality: 'Site B' });
 
   await page.goto('./#/');
-  await expect(page.getByText('Total Obs').locator('..')).toContainText('2');
+  await expect(page.getByRole('group', { name: 'Total Obs' })).toContainText('2');
   await expect(page.getByText('1 of 2 have WGS84 coordinates')).toBeVisible();
 
   await page.goto('./#/research');
