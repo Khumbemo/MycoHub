@@ -1,8 +1,22 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
-// Drawing box in viewBox units; the SVG scales to its container width.
-const W = 320;
-const H = 190;
+// The chart is drawn at its container's real pixel width (not scaled up from a
+// fixed viewBox), so axis text stays the same size on a phone and a desktop.
+const MIN_W = 260;
+const heightFor = (w) => Math.round(Math.min(280, Math.max(190, w * 0.45)));
+
+const useWidth = (ref) => {
+  const [width, setWidth] = useState(320);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el || typeof ResizeObserver === 'undefined') return;
+    const ro = new ResizeObserver(([entry]) => setWidth(Math.max(MIN_W, Math.round(entry.contentRect.width))));
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [ref]);
+  return width;
+};
+
 const PAD = { top: 16, right: 16, bottom: 30, left: 34 };
 
 const niceStep = (max, target = 4) => {
@@ -19,13 +33,16 @@ const niceStep = (max, target = 4) => {
  */
 const RarefactionChart = ({ points, chao1 }) => {
   const [hover, setHover] = useState(null);
+  const figRef = useRef(null);
+  const W = useWidth(figRef);
+  const H = heightFor(W);
   const N = points[points.length - 1]?.n ?? 0;
   const S = points[points.length - 1]?.s ?? 0;
 
   const { x, y, yTicks, xTicks } = useMemo(() => {
     const yMax = Math.max(1, Math.ceil(Math.max(S, chao1) * 1.1));
     const ys = niceStep(yMax);
-    const xs = niceStep(N);
+    const xs = niceStep(N, W > 520 ? 8 : 4);
     const x = (n) => PAD.left + (n / Math.max(N, 1)) * (W - PAD.left - PAD.right);
     const y = (s) => H - PAD.bottom - (s / yMax) * (H - PAD.top - PAD.bottom);
     const yTicks = [];
@@ -33,7 +50,7 @@ const RarefactionChart = ({ points, chao1 }) => {
     const xTicks = [];
     for (let t = 0; t <= N; t += xs) xTicks.push(t);
     return { x, y, yTicks, xTicks };
-  }, [N, S, chao1]);
+  }, [N, S, chao1, W, H]);
 
   if (points.length < 2) return null;
 
@@ -49,7 +66,7 @@ const RarefactionChart = ({ points, chao1 }) => {
   };
 
   return (
-    <figure className="m-0">
+    <figure ref={figRef} className="m-0">
       <svg
         viewBox={`0 0 ${W} ${H}`}
         className="w-full h-auto chart"

@@ -104,12 +104,12 @@ const SpeciesDBPage = () => {
         />
       </div>
 
-      <div className="space-y-4">
+      <div className="grid gap-4 md:grid-cols-2 2xl:grid-cols-3 items-start">
         {results.map((s) => (
           <SpeciesCard key={s.id} species={s} />
         ))}
         {results.length === 0 && (
-          <div className="bg-white p-6 rounded-[2rem] border border-gray-100 text-sm font-bold text-gray-500">
+          <div className="col-span-full bg-white p-6 rounded-[2rem] border border-gray-100 text-sm font-bold text-gray-500">
             No match in the offline list.{' '}
             <a
               className="text-emerald-600 underline"

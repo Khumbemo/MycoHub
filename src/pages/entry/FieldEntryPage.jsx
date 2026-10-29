@@ -37,7 +37,7 @@ const sectionColors = {
 };
 
 const FormSection = ({ title, icon: Icon, children, color = 'emerald' }) => (
-  <div className="bg-white p-6 rounded-[2rem] shadow-sm border border-gray-100 mb-6">
+  <section className="bg-white p-5 sm:p-6 rounded-[2rem] shadow-sm border border-gray-100 mb-6 break-inside-avoid">
     <div className="flex items-center gap-3 mb-6">
       <div className={`p-2 rounded-xl ${sectionColors[color]}`}>
         <Icon className="w-5 h-5" />
@@ -45,7 +45,7 @@ const FormSection = ({ title, icon: Icon, children, color = 'emerald' }) => (
       <h3 className="font-black text-gray-800 uppercase tracking-wider text-sm">{title}</h3>
     </div>
     {children}
-  </div>
+  </section>
 );
 
 const fieldClass =
@@ -447,398 +447,408 @@ const FieldEntryPage = () => {
         </div>
       )}
 
-      <FormSection title="Collection Metadata" icon={Database} color="blue">
-        <div className="grid grid-cols-2 gap-4">
+      <div className="xl:columns-2 xl:gap-6">
+        <FormSection title="Collection Metadata" icon={Database} color="blue">
+          <div className="grid grid-cols-2 gap-x-4">
+            <Input
+              id="collectorName"
+              label="Collector (recordedBy)"
+              placeholder="Jane Mycologist"
+              value={form.collectorName}
+              onChange={set('collectorName')}
+              error={errors.collectorName}
+              required
+            />
+            <Input
+              id="collectionNumber"
+              label="Collection # (recordNumber)"
+              placeholder="JM-2026-04"
+              value={form.collectionNumber}
+              onChange={set('collectionNumber')}
+              error={errors.collectionNumber}
+              required
+            />
+          </div>
           <Input
-            id="collectorName"
-            label="Collector (recordedBy)"
-            placeholder="Jane Mycologist"
-            value={form.collectorName}
-            onChange={set('collectorName')}
-            error={errors.collectorName}
+            id="eventDate"
+            label="Date collected (eventDate)"
+            type="date"
+            value={form.eventDate}
+            onChange={set('eventDate')}
+            error={errors.eventDate}
             required
           />
           <Input
-            id="collectionNumber"
-            label="Collection # (recordNumber)"
-            placeholder="JM-2026-04"
-            value={form.collectionNumber}
-            onChange={set('collectionNumber')}
-            error={errors.collectionNumber}
-            required
+            id="locality"
+            label="Site / Locality"
+            placeholder="Black Rock Forest, NY"
+            value={form.locality}
+            onChange={set('locality')}
+            hint="Use the same site name on every visit; Research Lab groups records by it."
           />
-        </div>
-        <Input
-          id="eventDate"
-          label="Date collected (eventDate)"
-          type="date"
-          value={form.eventDate}
-          onChange={set('eventDate')}
-          error={errors.eventDate}
-          required
-        />
-        <Input
-          id="locality"
-          label="Site / Locality"
-          placeholder="Black Rock Forest, NY"
-          value={form.locality}
-          onChange={set('locality')}
-          hint="Use the same site name on every visit; Research Lab groups records by it."
-        />
-        <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 gap-x-4">
+            <Input
+              id="latitude"
+              label="Latitude (WGS84)"
+              placeholder="41.378"
+              inputMode="decimal"
+              value={form.latitude}
+              onChange={set('latitude')}
+              error={errors.latitude}
+            />
+            <Input
+              id="longitude"
+              label="Longitude (WGS84)"
+              placeholder="-74.004"
+              inputMode="decimal"
+              value={form.longitude}
+              onChange={set('longitude')}
+              error={errors.longitude}
+            />
+          </div>
           <Input
-            id="latitude"
-            label="Latitude (WGS84)"
-            placeholder="41.378"
+            id="coordinateUncertainty"
+            label="Uncertainty (m)"
+            placeholder="e.g. 15"
             inputMode="decimal"
-            value={form.latitude}
-            onChange={set('latitude')}
-            error={errors.latitude}
+            value={form.coordinateUncertainty}
+            onChange={set('coordinateUncertainty')}
+            error={errors.coordinateUncertainty}
+            hint="coordinateUncertaintyInMeters: radius that contains the true location. Filled from GPS accuracy."
           />
-          <Input
-            id="longitude"
-            label="Longitude (WGS84)"
-            placeholder="-74.004"
-            inputMode="decimal"
-            value={form.longitude}
-            onChange={set('longitude')}
-            error={errors.longitude}
-          />
-        </div>
-        <Input
-          id="coordinateUncertainty"
-          label="Uncertainty (m)"
-          placeholder="e.g. 15"
-          inputMode="decimal"
-          value={form.coordinateUncertainty}
-          onChange={set('coordinateUncertainty')}
-          error={errors.coordinateUncertainty}
-          hint="coordinateUncertaintyInMeters: radius that contains the true location. Filled from GPS accuracy."
-        />
 
-        <button
-          type="button"
-          onClick={fillCurrentLocation}
-          disabled={locating}
-          className="w-full mt-1 bg-blue-50 text-blue-700 p-3 rounded-2xl flex items-center justify-center gap-2 text-[11px] font-black uppercase tracking-widest disabled:opacity-60"
-        >
-          <MapPin className="w-4 h-4" />
-          {locating ? 'Locating…' : 'Use current location'}
-        </button>
-      </FormSection>
-
-      <FormSection title="Taxonomy" icon={Tag}>
-        <Input
-          id="scientificName"
-          label="Scientific Name"
-          placeholder="e.g. Amanita muscaria"
-          value={form.scientificName}
-          onChange={set('scientificName')}
-          error={errors.scientificName}
-          required
-        />
-        <div className="-mt-2 mb-5 space-y-3">
           <button
             type="button"
-            onClick={checkName}
-            disabled={checkingName || !form.scientificName.trim()}
-            className="w-full bg-emerald-50 text-emerald-700 p-3 rounded-2xl flex items-center justify-center gap-2 text-[11px] font-black uppercase tracking-widest disabled:opacity-60"
+            onClick={fillCurrentLocation}
+            disabled={locating}
+            className="w-full mt-1 bg-blue-50 text-blue-700 p-3 rounded-2xl flex items-center justify-center gap-2 text-[11px] font-black uppercase tracking-widest disabled:opacity-60"
           >
-            {checkingName ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
-            Check name with GBIF
+            <MapPin className="w-4 h-4" />
+            {locating ? 'Locating…' : 'Use current location'}
           </button>
-          {nameCheck && (
-            <NameCheck
-              outcome={nameCheck}
-              onUse={(name) => {
-                setForm((prev) => ({ ...prev, scientificName: name }));
-                setNameCheck(null);
-                setTaxonomy(undefined);
-              }}
-            />
-          )}
-          {!nameCheck && taxonomy && (
-            <p className="text-[11px] font-bold text-emerald-700 bg-emerald-50 rounded-2xl p-3">
-              GBIF: {[taxonomy.order, taxonomy.family].filter(Boolean).join(' › ')} · taxonKey {taxonomy.taxonKey}
-            </p>
-          )}
-        </div>
-        <Select
-          id="identificationConfidence"
-          label="Confidence Level"
-          options={CONFIDENCE}
-          value={form.identificationConfidence}
-          onChange={set('identificationConfidence')}
-        />
-      </FormSection>
+        </FormSection>
 
-      <FormSection title="Photographs" icon={Camera} color="emerald">
-        <div className="flex gap-2">
-          {isNative() && (
+        <FormSection title="Taxonomy" icon={Tag}>
+          <Input
+            id="scientificName"
+            label="Scientific Name"
+            placeholder="e.g. Amanita muscaria"
+            value={form.scientificName}
+            onChange={set('scientificName')}
+            error={errors.scientificName}
+            required
+          />
+          <div className="-mt-2 mb-5 space-y-3">
             <button
               type="button"
-              onClick={takePhoto}
-              className="flex-1 bg-emerald-600 text-white p-4 rounded-2xl flex items-center justify-center gap-2 text-[11px] font-black uppercase tracking-widest"
+              onClick={checkName}
+              disabled={checkingName || !form.scientificName.trim()}
+              className="w-full bg-emerald-50 text-emerald-700 p-3 rounded-2xl flex items-center justify-center gap-2 text-[11px] font-black uppercase tracking-widest disabled:opacity-60"
             >
-              <Camera className="w-4 h-4" /> Take photo
+              {checkingName ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
+              Check name with GBIF
             </button>
-          )}
-          <label
-            htmlFor="photos"
-            className="flex-1 bg-gray-50 border-2 border-dashed border-gray-200 rounded-2xl p-4 flex items-center justify-center gap-2 cursor-pointer text-gray-500 text-[11px] font-black uppercase tracking-widest"
-          >
-            <ImagePlus className="w-4 h-4" /> {isNative() ? 'Choose files' : 'Add photos'}
-          </label>
-        </div>
-        <input
-          id="photos"
-          type="file"
-          accept="image/*"
-          capture="environment"
-          multiple
-          className="sr-only"
-          onChange={(e) => {
-            const files = Array.from(e.target.files ?? []);
-            e.target.value = '';
-            void addPhotos(
-              files,
-              files.map((f) => f.name),
-            );
-          }}
-        />
-
-        <p className="text-[11px] font-medium text-gray-500 mt-3">
-          Habitat, cap, hymenium, stipe and a scale bar. Photos are resized to 2048 px to save space.
-        </p>
-        {processingPhotos && <p className="text-[11px] font-bold text-emerald-700 mt-2">Processing photos…</p>}
-        {photos.length > 0 && (
-          <ul className="mt-4 grid grid-cols-3 gap-2">
-            {photos.map((p) => (
-              <PhotoThumb
-                key={p.key}
-                photo={p}
-                onRemove={() => setPhotos((prev) => prev.filter((x) => x.key !== p.key))}
+            {nameCheck && (
+              <NameCheck
+                outcome={nameCheck}
+                onUse={(name) => {
+                  setForm((prev) => ({ ...prev, scientificName: name }));
+                  setNameCheck(null);
+                  setTaxonomy(undefined);
+                }}
               />
-            ))}
-          </ul>
-        )}
-      </FormSection>
-
-      <FormSection title="Morphology: Pileus & Hymenium" icon={Microscope} color="amber">
-        <div className="grid grid-cols-2 gap-4">
-          <Input
-            id="capDiameterMm"
-            label="Cap Diameter (mm)"
-            placeholder="40-120"
-            value={form.capDiameterMm}
-            onChange={set('capDiameterMm')}
+            )}
+            {!nameCheck && taxonomy && (
+              <p className="text-[11px] font-bold text-emerald-700 bg-emerald-50 rounded-2xl p-3">
+                GBIF: {[taxonomy.order, taxonomy.family].filter(Boolean).join(' › ')} · taxonKey {taxonomy.taxonKey}
+              </p>
+            )}
+          </div>
+          <Select
+            id="identificationConfidence"
+            label="Confidence Level"
+            options={CONFIDENCE}
+            value={form.identificationConfidence}
+            onChange={set('identificationConfidence')}
           />
-          <Input
-            id="capShape"
-            label="Cap Shape"
-            placeholder="Convex to plane"
-            value={form.capShape}
-            onChange={set('capShape')}
-          />
-        </div>
-        <Input
-          id="capColor"
-          label="Cap Color (Munsell/Kornerup)"
-          placeholder="7.5R 4/12"
-          value={form.capColor}
-          onChange={set('capColor')}
-        />
-        <div className="h-px bg-gray-100 my-4" />
-        <Select
-          id="hymeniumType"
-          label="Hymenium Type"
-          options={HYMENIUM}
-          value={form.hymeniumType}
-          onChange={set('hymeniumType')}
-        />
-        <Select
-          id="gillSpacing"
-          label="Gill Spacing"
-          options={SPACING}
-          value={form.gillSpacing}
-          onChange={set('gillSpacing')}
-        />
-        <Input
-          id="attachment"
-          label="Attachment"
-          placeholder="Free, adnexed, adnate, decurrent…"
-          value={form.attachment}
-          onChange={set('attachment')}
-        />
-      </FormSection>
+        </FormSection>
 
-      <FormSection title="Context & Reactions" icon={Beaker} color="rose">
-        <Input id="odor" label="Odor" placeholder="Farinaceous, anise, etc." value={form.odor} onChange={set('odor')} />
-        <Input
-          id="bruising"
-          label="Bruising Reaction"
-          placeholder="Yellowing within 2 min"
-          value={form.bruising}
-          onChange={set('bruising')}
-        />
-        <div className="grid grid-cols-2 gap-4">
-          <Input id="koh" label="KOH Reaction" placeholder="Negative" value={form.koh} onChange={set('koh')} />
-          <Input id="feso4" label="FeSO4" placeholder="Olive-green" value={form.feso4} onChange={set('feso4')} />
-        </div>
-        <div className="bg-red-50 p-4 rounded-2xl mt-4">
-          <span className="block text-[10px] font-black text-red-600 uppercase tracking-widest mb-1">
-            Safety Advisory
-          </span>
-          <p className="text-[11px] font-bold text-red-600 mb-3">
-            Never taste a specimen that could be an Amanita, Galerina or other deadly genus. If tasting, chew a tiny
-            piece and spit it out. Never swallow.
-          </p>
-          <Input
-            id="taste"
-            label="Taste (scientific only)"
-            placeholder="Mild, acrid…"
-            value={form.taste}
-            onChange={set('taste')}
-          />
-        </div>
-      </FormSection>
-
-      <FormSection title="Microscopy" icon={Microscope} color="violet">
-        <Input
-          id="sporePrintColor"
-          label="Spore Print Colour"
-          placeholder="White, pink, rusty brown…"
-          value={form.sporePrintColor}
-          onChange={set('sporePrintColor')}
-        />
-        <div className="mb-5">
-          <label htmlFor="sporeMeasurements" className={labelClass}>
-            Spore measurements (µm, length × width)
-          </label>
-          <textarea
-            id="sporeMeasurements"
-            rows={3}
-            placeholder="9.5 x 7, 10 x 7.5, 8.5 x 6.5 …"
-            value={form.sporeMeasurements}
-            onChange={(e) => set('sporeMeasurements')(e.target.value)}
-            aria-invalid={!!errors.sporeMeasurements}
-            className={`${fieldClass} font-mono ${errors.sporeMeasurements ? 'ring-2 ring-rose-400/60' : ''}`}
-          />
-
-          {errors.sporeMeasurements && (
-            <p className="text-[11px] font-bold text-rose-600 mt-1 ml-1">{errors.sporeMeasurements}</p>
-          )}
-          {spores && (
-            <p
-              className="mt-2 text-[11px] font-bold text-violet-800 bg-violet-50 rounded-2xl p-3 font-mono"
-              aria-live="polite"
+        <FormSection title="Photographs" icon={Camera} color="emerald">
+          <div className="flex gap-2">
+            {isNative() && (
+              <button
+                type="button"
+                onClick={takePhoto}
+                className="flex-1 bg-emerald-600 text-white p-4 rounded-2xl flex items-center justify-center gap-2 text-[11px] font-black uppercase tracking-widest"
+              >
+                <Camera className="w-4 h-4" /> Take photo
+              </button>
+            )}
+            <label
+              htmlFor="photos"
+              className="flex-1 bg-gray-50 border-2 border-dashed border-gray-200 rounded-2xl p-4 flex items-center justify-center gap-2 cursor-pointer text-gray-500 text-[11px] font-black uppercase tracking-widest"
             >
-              {formatSporeStats(spores)}
-            </p>
-          )}
-          <p className="text-[11px] font-medium text-gray-500 mt-1 ml-1">
-            Measure at least 20 mature spores, for example from a spore print, for a reliable range.
+              <ImagePlus className="w-4 h-4" /> {isNative() ? 'Choose files' : 'Add photos'}
+            </label>
+          </div>
+          <input
+            id="photos"
+            type="file"
+            accept="image/*"
+            capture="environment"
+            multiple
+            className="sr-only"
+            onChange={(e) => {
+              const files = Array.from(e.target.files ?? []);
+              e.target.value = '';
+              void addPhotos(
+                files,
+                files.map((f) => f.name),
+              );
+            }}
+          />
+
+          <p className="text-[11px] font-medium text-gray-500 mt-3">
+            Habitat, cap, hymenium, stipe and a scale bar. Photos are resized to 2048 px to save space.
           </p>
-        </div>
-        <Select
-          id="melzers"
-          label="Melzer's Reagent"
-          options={MELZERS}
-          value={form.melzers}
-          onChange={set('melzers')}
-        />
-        <Select
-          id="clampConnections"
-          label="Clamp Connections"
-          options={CLAMPS}
-          value={form.clampConnections}
-          onChange={set('clampConnections')}
-        />
-      </FormSection>
+          {processingPhotos && <p className="text-[11px] font-bold text-emerald-700 mt-2">Processing photos…</p>}
+          {photos.length > 0 && (
+            <ul className="mt-4 grid grid-cols-3 sm:grid-cols-4 gap-2">
+              {photos.map((p) => (
+                <PhotoThumb
+                  key={p.key}
+                  photo={p}
+                  onRemove={() => setPhotos((prev) => prev.filter((x) => x.key !== p.key))}
+                />
+              ))}
+            </ul>
+          )}
+        </FormSection>
 
-      <FormSection title="Ecological Data" icon={TreeDeciduous} color="teal">
-        <Select
-          id="trophicMode"
-          label="Trophic Mode"
-          options={TROPHIC}
-          value={form.trophicMode}
-          onChange={set('trophicMode')}
-        />
-        <Select
-          id="substrate"
-          label="Substrate"
-          options={SUBSTRATE}
-          value={form.substrate}
-          onChange={set('substrate')}
-        />
-        <Input
-          id="hostSpecies"
-          label="Host / Associated Plant"
-          placeholder="e.g. Fagus grandifolia"
-          value={form.hostSpecies}
-          onChange={set('hostSpecies')}
-        />
-        <Select
-          id="habitatType"
-          label="Habitat Type"
-          options={HABITAT}
-          value={form.habitatType}
-          onChange={set('habitatType')}
-        />
-      </FormSection>
-
-      <FormSection title="Voucher Specimen" icon={Database} color="indigo">
-        <div className="flex flex-wrap items-center gap-4 mb-4">
-          <label className="flex items-center gap-2 cursor-pointer">
-            <input
-              id="preserved"
-              type="checkbox"
-              checked={form.preserved}
-              onChange={(e) => set('preserved')(e.target.checked)}
-              className="w-4 h-4 rounded text-indigo-600 border-gray-300 focus:ring-indigo-500"
+        <FormSection title="Morphology: Pileus & Hymenium" icon={Microscope} color="amber">
+          <div className="grid grid-cols-2 gap-x-4">
+            <Input
+              id="capDiameterMm"
+              label="Cap Diameter (mm)"
+              placeholder="40-120"
+              value={form.capDiameterMm}
+              onChange={set('capDiameterMm')}
             />
-            <span className="text-xs font-bold text-gray-700 uppercase tracking-widest">Preserved</span>
-          </label>
-          <label className="flex items-center gap-2 cursor-pointer">
-            <input
-              id="dnaExtracted"
-              type="checkbox"
-              checked={form.dnaExtracted}
-              onChange={(e) => set('dnaExtracted')(e.target.checked)}
-              className="w-4 h-4 rounded text-indigo-600 border-gray-300 focus:ring-indigo-500"
+            <Input
+              id="capShape"
+              label="Cap Shape"
+              placeholder="Convex to plane"
+              value={form.capShape}
+              onChange={set('capShape')}
             />
-            <span className="text-xs font-bold text-gray-700 uppercase tracking-widest">DNA Extracted</span>
-          </label>
-        </div>
-        <div className="grid grid-cols-2 gap-4">
+          </div>
           <Input
-            id="herbariumCode"
-            label="Herbarium Code"
-            placeholder="NY, MICH, etc."
-            value={form.herbariumCode}
-            onChange={set('herbariumCode')}
+            id="capColor"
+            label="Cap Color (Munsell/Kornerup)"
+            placeholder="7.5R 4/12"
+            value={form.capColor}
+            onChange={set('capColor')}
+          />
+          <div className="h-px bg-gray-100 my-4" />
+          <Select
+            id="hymeniumType"
+            label="Hymenium Type"
+            options={HYMENIUM}
+            value={form.hymeniumType}
+            onChange={set('hymeniumType')}
+          />
+          <Select
+            id="gillSpacing"
+            label="Gill Spacing"
+            options={SPACING}
+            value={form.gillSpacing}
+            onChange={set('gillSpacing')}
           />
           <Input
-            id="accessionNumber"
-            label="Accession #"
-            placeholder="MH-2026-42"
-            value={form.accessionNumber}
-            onChange={set('accessionNumber')}
+            id="attachment"
+            label="Attachment"
+            placeholder="Free, adnexed, adnate, decurrent…"
+            value={form.attachment}
+            onChange={set('attachment')}
           />
-        </div>
-      </FormSection>
+        </FormSection>
 
-      <motion.button
-        whileTap={{ scale: 0.98 }}
-        onClick={handleSave}
-        disabled={saving || processingPhotos}
-        className="w-full bg-emerald-600 disabled:opacity-60 text-white p-4 rounded-3xl flex items-center justify-center gap-2 shadow-xl shadow-emerald-600/30"
-      >
-        <Save className="w-4 h-4" />
-        <span className="font-black text-xs uppercase tracking-widest">
-          {saving ? 'Saving…' : isEdit ? 'Save Changes' : 'Save Record'}
-        </span>
-      </motion.button>
+        <FormSection title="Context & Reactions" icon={Beaker} color="rose">
+          <Input
+            id="odor"
+            label="Odor"
+            placeholder="Farinaceous, anise, etc."
+            value={form.odor}
+            onChange={set('odor')}
+          />
+          <Input
+            id="bruising"
+            label="Bruising Reaction"
+            placeholder="Yellowing within 2 min"
+            value={form.bruising}
+            onChange={set('bruising')}
+          />
+          <div className="grid grid-cols-2 gap-x-4">
+            <Input id="koh" label="KOH Reaction" placeholder="Negative" value={form.koh} onChange={set('koh')} />
+            <Input id="feso4" label="FeSO4" placeholder="Olive-green" value={form.feso4} onChange={set('feso4')} />
+          </div>
+          <div className="bg-red-50 p-4 rounded-2xl mt-4">
+            <span className="block text-[10px] font-black text-red-600 uppercase tracking-widest mb-1">
+              Safety Advisory
+            </span>
+            <p className="text-[11px] font-bold text-red-600 mb-3">
+              Never taste a specimen that could be an Amanita, Galerina or other deadly genus. If tasting, chew a tiny
+              piece and spit it out. Never swallow.
+            </p>
+            <Input
+              id="taste"
+              label="Taste (scientific only)"
+              placeholder="Mild, acrid…"
+              value={form.taste}
+              onChange={set('taste')}
+            />
+          </div>
+        </FormSection>
+
+        <FormSection title="Microscopy" icon={Microscope} color="violet">
+          <Input
+            id="sporePrintColor"
+            label="Spore Print Colour"
+            placeholder="White, pink, rusty brown…"
+            value={form.sporePrintColor}
+            onChange={set('sporePrintColor')}
+          />
+          <div className="mb-5">
+            <label htmlFor="sporeMeasurements" className={labelClass}>
+              Spore measurements (µm, length × width)
+            </label>
+            <textarea
+              id="sporeMeasurements"
+              rows={3}
+              placeholder="9.5 x 7, 10 x 7.5, 8.5 x 6.5 …"
+              value={form.sporeMeasurements}
+              onChange={(e) => set('sporeMeasurements')(e.target.value)}
+              aria-invalid={!!errors.sporeMeasurements}
+              className={`${fieldClass} font-mono ${errors.sporeMeasurements ? 'ring-2 ring-rose-400/60' : ''}`}
+            />
+
+            {errors.sporeMeasurements && (
+              <p className="text-[11px] font-bold text-rose-600 mt-1 ml-1">{errors.sporeMeasurements}</p>
+            )}
+            {spores && (
+              <p
+                className="mt-2 text-[11px] font-bold text-violet-800 bg-violet-50 rounded-2xl p-3 font-mono"
+                aria-live="polite"
+              >
+                {formatSporeStats(spores)}
+              </p>
+            )}
+            <p className="text-[11px] font-medium text-gray-500 mt-1 ml-1">
+              Measure at least 20 mature spores, for example from a spore print, for a reliable range.
+            </p>
+          </div>
+          <Select
+            id="melzers"
+            label="Melzer's Reagent"
+            options={MELZERS}
+            value={form.melzers}
+            onChange={set('melzers')}
+          />
+          <Select
+            id="clampConnections"
+            label="Clamp Connections"
+            options={CLAMPS}
+            value={form.clampConnections}
+            onChange={set('clampConnections')}
+          />
+        </FormSection>
+
+        <FormSection title="Ecological Data" icon={TreeDeciduous} color="teal">
+          <Select
+            id="trophicMode"
+            label="Trophic Mode"
+            options={TROPHIC}
+            value={form.trophicMode}
+            onChange={set('trophicMode')}
+          />
+          <Select
+            id="substrate"
+            label="Substrate"
+            options={SUBSTRATE}
+            value={form.substrate}
+            onChange={set('substrate')}
+          />
+          <Input
+            id="hostSpecies"
+            label="Host / Associated Plant"
+            placeholder="e.g. Fagus grandifolia"
+            value={form.hostSpecies}
+            onChange={set('hostSpecies')}
+          />
+          <Select
+            id="habitatType"
+            label="Habitat Type"
+            options={HABITAT}
+            value={form.habitatType}
+            onChange={set('habitatType')}
+          />
+        </FormSection>
+
+        <FormSection title="Voucher Specimen" icon={Database} color="indigo">
+          <div className="flex flex-wrap items-center gap-4 mb-4">
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                id="preserved"
+                type="checkbox"
+                checked={form.preserved}
+                onChange={(e) => set('preserved')(e.target.checked)}
+                className="w-4 h-4 rounded text-indigo-600 border-gray-300 focus:ring-indigo-500"
+              />
+              <span className="text-xs font-bold text-gray-700 uppercase tracking-widest">Preserved</span>
+            </label>
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                id="dnaExtracted"
+                type="checkbox"
+                checked={form.dnaExtracted}
+                onChange={(e) => set('dnaExtracted')(e.target.checked)}
+                className="w-4 h-4 rounded text-indigo-600 border-gray-300 focus:ring-indigo-500"
+              />
+              <span className="text-xs font-bold text-gray-700 uppercase tracking-widest">DNA Extracted</span>
+            </label>
+          </div>
+          <div className="grid grid-cols-2 gap-x-4">
+            <Input
+              id="herbariumCode"
+              label="Herbarium Code"
+              placeholder="NY, MICH, etc."
+              value={form.herbariumCode}
+              onChange={set('herbariumCode')}
+            />
+            <Input
+              id="accessionNumber"
+              label="Accession #"
+              placeholder="MH-2026-42"
+              value={form.accessionNumber}
+              onChange={set('accessionNumber')}
+            />
+          </div>
+        </FormSection>
+      </div>
+
+      <div className="flex justify-end">
+        <motion.button
+          whileTap={{ scale: 0.98 }}
+          onClick={handleSave}
+          disabled={saving || processingPhotos}
+          className="w-full sm:w-auto sm:px-12 bg-emerald-600 disabled:opacity-60 text-white p-4 rounded-3xl flex items-center justify-center gap-2 shadow-xl shadow-emerald-600/30"
+        >
+          <Save className="w-4 h-4" />
+          <span className="font-black text-xs uppercase tracking-widest">
+            {saving ? 'Saving…' : isEdit ? 'Save Changes' : 'Save Record'}
+          </span>
+        </motion.button>
+      </div>
     </div>
   );
 };

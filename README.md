@@ -19,6 +19,22 @@ The data model is documented as JSDoc typedefs in `src/types/index.js`, so edito
 VS Code still show field hints. Code style is set by `.prettierrc.json`
 (`npx prettier --write .`).
 
+## Screen sizes
+
+One app adapts to the device. The breakpoints are defined once in `tailwind.config.js`
+(`rail`, `wide`, `short`) and reused by `src/utils/layout.js`.
+
+| Device | Layout |
+|---|---|
+| Phone, portrait | Top header and a floating bottom tab bar; swipe between tabs |
+| Phone, landscape | Slim icon rail on the left and compact header, so the content keeps the screen height |
+| Tablet (768 px and up) | Icon rail with labels; review, species and lab cards in two columns |
+| Laptop / desktop (1024 px and up) | Full sidebar with page names, account and sync status; the field form, record page and dashboard use two columns |
+
+The layout handles notches and system bars (safe-area insets), follows rotation without
+reloading, and has no sideways scrolling at any size. `e2e/layout.spec.js` checks this on a
+phone, a landscape phone, a tablet and a desktop.
+
 ## Scripts
 
 | Command | What it does |

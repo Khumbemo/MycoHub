@@ -15,11 +15,11 @@ const ChatPage = () => {
   const [input, setInput] = useState('');
   const messagesEndRef = useRef(null);
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
-
-  useEffect(scrollToBottom, [messages]);
+  // The conversation scrolls with the page; bring the newest message into view,
+  // but leave the page where it is when it first opens.
+  useEffect(() => {
+    if (messages.length > 1) messagesEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
+  }, [messages]);
 
   const send = (raw) => {
     const text = raw.trim();
@@ -35,9 +35,9 @@ const ChatPage = () => {
   };
 
   return (
-    <div className="flex flex-col h-[calc(100dvh-220px)] min-h-[420px]">
-      <div className="bg-emerald-600 p-6 rounded-t-[2.5rem] shadow-lg flex items-center gap-4">
-        <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center backdrop-blur-md">
+    <div className="flex flex-col w-full max-w-3xl mx-auto">
+      <div className="bg-emerald-600 p-6 short:p-3 rounded-t-[2.5rem] short:rounded-t-3xl shadow-lg flex items-center gap-4">
+        <div className="w-12 h-12 short:w-9 short:h-9 bg-white/20 rounded-2xl flex items-center justify-center backdrop-blur-md flex-shrink-0">
           <Bot className="text-white w-7 h-7" />
         </div>
         <div>
@@ -51,7 +51,7 @@ const ChatPage = () => {
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-white/50 backdrop-blur-sm">
+      <div className="p-4 space-y-4 bg-white/50 backdrop-blur-sm min-h-[30dvh]" aria-live="polite">
         <AnimatePresence>
           {messages.map((msg) => (
             <motion.div
@@ -72,42 +72,45 @@ const ChatPage = () => {
             </motion.div>
           ))}
         </AnimatePresence>
-        <div ref={messagesEndRef} />
+        {/* scroll-margin keeps the newest message clear of the pinned composer */}
+        <div ref={messagesEndRef} style={{ scrollMarginBottom: 'calc(var(--nav-bottom) + 9rem)' }} />
       </div>
 
-      <div className="flex gap-2 overflow-x-auto no-scrollbar px-4 py-2 bg-white/50">
-        {NOTES.map((n) => (
-          <button
-            key={n.topic}
-            onClick={() => send(n.keywords[0])}
-            className="flex-shrink-0 bg-white border border-emerald-100 text-emerald-700 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest"
-          >
-            {n.topic}
-          </button>
-        ))}
-      </div>
+      <div className="sticky bottom-[var(--nav-bottom)] z-20">
+        <div className="flex gap-2 overflow-x-auto no-scrollbar px-4 py-2 bg-white/90 backdrop-blur-md">
+          {NOTES.map((n) => (
+            <button
+              key={n.topic}
+              onClick={() => send(n.keywords[0])}
+              className="flex-shrink-0 bg-white border border-emerald-100 text-emerald-700 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest"
+            >
+              {n.topic}
+            </button>
+          ))}
+        </div>
 
-      <div className="p-4 bg-white rounded-b-[2.5rem] border-t border-emerald-50 shadow-inner">
-        <div className="flex gap-2 bg-emerald-50 p-2 rounded-2xl">
-          <input
-            type="text"
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' && !e.nativeEvent.isComposing) send(input);
-            }}
-            aria-label="Message"
-            placeholder="Ask about taxonomy, morphology..."
-            className="flex-1 min-w-0 bg-transparent border-none outline-none focus:ring-0 text-sm font-bold text-gray-700 px-2"
-          />
+        <div className="p-4 short:p-2 bg-white rounded-b-[2.5rem] short:rounded-b-3xl border-t border-emerald-50 shadow-inner">
+          <div className="flex gap-2 bg-emerald-50 p-2 rounded-2xl">
+            <input
+              type="text"
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !e.nativeEvent.isComposing) send(input);
+              }}
+              aria-label="Message"
+              placeholder="Ask about taxonomy, morphology..."
+              className="flex-1 min-w-0 bg-transparent border-none outline-none focus:ring-0 text-sm font-bold text-gray-700 px-2"
+            />
 
-          <button
-            onClick={() => send(input)}
-            aria-label="Send"
-            className="bg-emerald-600 text-white p-3 rounded-xl shadow-lg shadow-emerald-600/20 active:scale-90 transition-all"
-          >
-            <Send className="w-4 h-4" />
-          </button>
+            <button
+              onClick={() => send(input)}
+              aria-label="Send"
+              className="bg-emerald-600 text-white p-3 rounded-xl shadow-lg shadow-emerald-600/20 active:scale-90 transition-all"
+            >
+              <Send className="w-4 h-4" />
+            </button>
+          </div>
         </div>
       </div>
     </div>

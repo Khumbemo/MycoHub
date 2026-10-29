@@ -14,8 +14,10 @@ const metricColors = {
   teal: 'bg-teal-50 text-teal-700',
 };
 
-const LabMetric = ({ label, value, icon: Icon, color, hint }) => (
-  <div className="bg-white p-5 rounded-[2rem] border border-gray-100 shadow-sm flex items-center gap-4 min-w-0">
+const LabMetric = ({ label, value, icon: Icon, color, hint, span = false }) => (
+  <div
+    className={`bg-white p-5 rounded-[2rem] border border-gray-100 shadow-sm flex items-center gap-4 min-w-0 ${span ? 'col-span-2 lg:col-span-1' : ''}`}
+  >
     <div className={`p-3 rounded-2xl shadow-sm ${metricColors[color]}`}>
       <Icon className="w-5 h-5" />
     </div>
@@ -129,12 +131,11 @@ const ResearchDashboardPage = () => {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 mb-8">
-        <div className="grid grid-cols-2 gap-4">
-          <LabMetric label="Species Richness S" value={m.richness} icon={FlaskConical} color="blue" />
-          <LabMetric label="Records" value={named} icon={ClipboardList} color="purple" />
-        </div>
+      <div className="grid grid-cols-2 gap-4 mb-8 lg:grid-cols-3 2xl:grid-cols-5">
+        <LabMetric label="Species Richness S" value={m.richness} icon={FlaskConical} color="blue" />
+        <LabMetric label="Records" value={named} icon={ClipboardList} color="purple" />
         <LabMetric
+          span
           label="Chao1 Estimated Richness"
           value={m.richness ? m.chao1.toFixed(1) : '—'}
           icon={Telescope}
@@ -147,6 +148,7 @@ const ResearchDashboardPage = () => {
         />
 
         <LabMetric
+          span
           label="Shannon Diversity H′"
           value={m.shannon.toFixed(2)}
           icon={Binary}
@@ -154,6 +156,7 @@ const ResearchDashboardPage = () => {
           hint="−Σ pᵢ ln pᵢ over species counts"
         />
         <LabMetric
+          span
           label="Pielou Evenness J′"
           value={m.evenness === null ? '—' : m.evenness.toFixed(2)}
           icon={Sigma}
@@ -162,52 +165,56 @@ const ResearchDashboardPage = () => {
         />
       </div>
 
-      {m.curve.length > 1 && (
-        <section className="bg-white p-6 rounded-[2rem] border border-gray-100 mb-8">
-          <h3 className="font-black text-gray-800 uppercase tracking-wider text-sm">Species accumulation</h3>
-          <p className="text-[11px] font-bold text-gray-500 mb-3">
-            A curve still climbing at its end means more species remain to be found.
-          </p>
-          <RarefactionChart points={m.curve} chao1={m.chao1} />
-        </section>
-      )}
+      <div className="grid gap-8 mb-8 xl:grid-cols-2 xl:items-start">
+        {m.curve.length > 1 && (
+          <section className="bg-white p-6 rounded-[2rem] border border-gray-100">
+            <h3 className="font-black text-gray-800 uppercase tracking-wider text-sm">Species accumulation</h3>
+            <p className="text-[11px] font-bold text-gray-500 mb-3">
+              A curve still climbing at its end means more species remain to be found.
+            </p>
+            <RarefactionChart points={m.curve} chao1={m.chao1} />
+          </section>
+        )}
 
-      <div className="bg-gray-900 p-8 rounded-[3rem] text-white shadow-2xl relative overflow-hidden mb-8">
-        <div className="relative z-10">
-          <h3 className="text-xl font-black tracking-tight mb-2 italic">Phenology</h3>
-          <p className="text-xs text-gray-500 font-bold mb-6">Records per month of collection</p>
+        <div className="bg-gray-900 p-8 rounded-[3rem] text-white shadow-2xl relative overflow-hidden">
+          <div className="relative z-10">
+            <h3 className="text-xl font-black tracking-tight mb-2 italic">Phenology</h3>
+            <p className="text-xs text-gray-500 font-bold mb-6">Records per month of collection</p>
 
-          <div className="flex items-end gap-2 h-32 mb-2">
-            {m.monthly.map((n, i) => (
-              <div
-                key={i}
-                className="flex-1 h-full flex flex-col justify-end items-center gap-1"
-                title={`${MONTH_NAMES[i]}: ${n} record${n === 1 ? '' : 's'}`}
-              >
-                {n > 0 && <span className="text-[10px] font-black text-emerald-300 tabular-nums">{n}</span>}
-                <motion.div
-                  initial={{ height: 0 }}
-                  animate={{ height: `${(n / maxMonth) * 85}%` }}
-                  className="w-full bg-emerald-500 rounded-full min-h-[3px]"
-                />
-              </div>
-            ))}
+            <div className="flex items-end gap-2 h-32 mb-2">
+              {m.monthly.map((n, i) => (
+                <div
+                  key={i}
+                  className="flex-1 h-full flex flex-col justify-end items-center gap-1"
+                  title={`${MONTH_NAMES[i]}: ${n} record${n === 1 ? '' : 's'}`}
+                >
+                  {n > 0 && <span className="text-[10px] font-black text-emerald-300 tabular-nums">{n}</span>}
+                  <motion.div
+                    initial={{ height: 0 }}
+                    animate={{ height: `${(n / maxMonth) * 85}%` }}
+                    className="w-full bg-emerald-500 rounded-full min-h-[3px]"
+                  />
+                </div>
+              ))}
+            </div>
+            <div className="flex gap-2 text-[10px] font-black text-gray-500 uppercase" aria-hidden="true">
+              {MONTHS.map((mo, i) => (
+                <span key={i} className="flex-1 text-center">
+                  {mo}
+                </span>
+              ))}
+            </div>
           </div>
-          <div className="flex gap-2 text-[10px] font-black text-gray-500 uppercase" aria-hidden="true">
-            {MONTHS.map((mo, i) => (
-              <span key={i} className="flex-1 text-center">
-                {mo}
-              </span>
-            ))}
-          </div>
+          <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-600/20 rounded-full blur-[80px] -mr-32 -mt-32" />
         </div>
-        <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-600/20 rounded-full blur-[80px] -mr-32 -mt-32" />
       </div>
 
-      <div className="space-y-3">
-        <h4 className="text-xs font-black text-gray-500 uppercase tracking-widest ml-2">Most recorded taxa</h4>
+      <div className="space-y-3 lg:grid lg:grid-cols-2 lg:gap-3 lg:space-y-0 2xl:grid-cols-3">
+        <h4 className="col-span-full text-xs font-black text-gray-500 uppercase tracking-widest ml-2">
+          Most recorded taxa
+        </h4>
         {m.top.length === 0 && (
-          <p className="bg-white p-6 rounded-[2rem] border border-gray-100 text-sm font-bold text-gray-600">
+          <p className="col-span-full bg-white p-6 rounded-[2rem] border border-gray-100 text-sm font-bold text-gray-600">
             Save field records to see diversity metrics. Each distinct scientific name counts as one taxon.
           </p>
         )}
