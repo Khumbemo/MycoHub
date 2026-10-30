@@ -37,7 +37,7 @@ const Row = ({ term, value }) =>
   );
 
 const Section = ({ title, children }) => (
-  <section className="bg-white p-6 rounded-[2rem] border border-gray-100">
+  <section className="bg-white p-6 rounded-2xl border border-gray-100">
     <h3 className="font-black text-gray-800 uppercase tracking-wider text-sm mb-4">{title}</h3>
     {children}
   </section>
@@ -88,7 +88,7 @@ const RecordPage = () => {
   }
   if (record === null) {
     return (
-      <div className="bg-white p-6 rounded-[2rem] text-sm font-bold text-gray-600">
+      <div className="bg-white p-6 rounded-2xl text-sm font-bold text-gray-600">
         This record isn't on this device.{' '}
         <Link to="/community" className="text-emerald-700 underline">
           Back to records
@@ -117,7 +117,7 @@ const RecordPage = () => {
   return (
     <div className="pb-12 grid gap-4 lg:grid-cols-2 lg:items-start">
       <div className="space-y-4 min-w-0">
-        <header className="bg-white p-6 rounded-[2rem] border border-gray-100">
+        <header className="bg-white p-6 rounded-2xl border border-gray-100">
           <div className="flex justify-between items-start gap-3">
             <div className="min-w-0">
               <h2 className="text-2xl font-black italic text-gray-800 leading-tight break-words">

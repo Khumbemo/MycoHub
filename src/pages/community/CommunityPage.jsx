@@ -24,7 +24,7 @@ const VerificationTicket = ({ record }) => {
   const agreed = mine && mine.taxon.trim().toLowerCase() === leading.trim().toLowerCase();
 
   return (
-    <div className="bg-white p-6 rounded-[2rem] shadow-sm border border-gray-100">
+    <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
       <Link to={`/record/${record.id}`} className="flex justify-between items-start gap-3 mb-4">
         <div className="min-w-0">
           <h4 className="font-black italic text-gray-800 leading-tight truncate">{record.scientificName}</h4>
@@ -57,7 +57,7 @@ const VerificationTicket = ({ record }) => {
         <button
           onClick={() => user && addIdentification(record, user, leading)}
           disabled={!user || agreed}
-          className="flex-1 bg-emerald-600 disabled:bg-gray-200 disabled:text-gray-500 disabled:shadow-none text-white p-3 rounded-xl font-black text-[11px] uppercase tracking-widest flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/20"
+          className="flex-1 bg-emerald-600 disabled:bg-gray-200 disabled:text-gray-500 disabled:shadow-none text-white p-3 rounded-xl font-black text-[11px] uppercase tracking-widest flex items-center justify-center gap-2 shadow-lg"
         >
           <CheckCircle2 className="w-4 h-4" />
           {agreed ? 'Agreed' : 'Agree'}
@@ -132,7 +132,7 @@ const CommunityPage = () => {
           <VerificationTicket key={r.id} record={r} />
         ))}
         {records && shown.length === 0 && (
-          <div className="col-span-full bg-white p-8 rounded-[2rem] border border-gray-100 text-center">
+          <div className="col-span-full bg-white p-8 rounded-2xl border border-gray-100 text-center">
             <Leaf className="w-8 h-8 text-emerald-200 mx-auto mb-3" />
             <p className="text-sm font-bold text-gray-600 mb-4">
               {list.length === 0 ? 'No records to review yet.' : 'No records match this filter.'}

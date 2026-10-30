@@ -37,7 +37,7 @@ const sectionColors = {
 };
 
 const FormSection = ({ title, icon: Icon, children, color = 'emerald' }) => (
-  <section className="bg-white p-5 sm:p-6 rounded-[2rem] shadow-sm border border-gray-100 mb-6 break-inside-avoid">
+  <section className="bg-white p-5 sm:p-6 rounded-2xl shadow-sm border border-gray-100 mb-6 break-inside-avoid">
     <div className="flex items-center gap-3 mb-6">
       <div className={`p-2 rounded-xl ${sectionColors[color]}`}>
         <Icon className="w-5 h-5" />
@@ -49,7 +49,7 @@ const FormSection = ({ title, icon: Icon, children, color = 'emerald' }) => (
 );
 
 const fieldClass =
-  'w-full bg-gray-50 border-none rounded-2xl px-4 py-3 text-sm font-medium text-gray-800 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 transition-all shadow-inner';
+  'w-full bg-gray-50 border-none rounded-2xl px-4 py-3 text-sm font-medium text-gray-800 placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 transition-all shadow-inner';
 const labelClass = 'block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1.5 ml-1';
 
 const Input = ({ id, label, placeholder, value, onChange, type = 'text', inputMode, error, required, hint }) => (
@@ -291,14 +291,14 @@ const FieldEntryPage = () => {
 
   if (isEdit && existing === null) {
     return (
-      <p className="bg-white p-6 rounded-[2rem] text-sm font-bold text-gray-600">
+      <p className="bg-white p-6 rounded-2xl text-sm font-bold text-gray-600">
         This record no longer exists on this device.
       </p>
     );
   }
   if (isEdit && existing && user && existing.userId !== user.id && !existing.userId.startsWith('local-')) {
     return (
-      <p className="bg-white p-6 rounded-[2rem] text-sm font-bold text-gray-600">
+      <p className="bg-white p-6 rounded-2xl text-sm font-bold text-gray-600">
         Only the collector who made this record can edit it. You can add an identification from the record page.
       </p>
     );
@@ -417,7 +417,7 @@ const FieldEntryPage = () => {
           whileTap={{ scale: 0.95 }}
           onClick={handleSave}
           disabled={saving || processingPhotos}
-          className="bg-emerald-600 disabled:opacity-60 text-white px-6 py-3 rounded-2xl flex items-center gap-2 shadow-xl shadow-emerald-600/30 flex-shrink-0"
+          className="bg-emerald-600 disabled:opacity-60 text-white px-6 py-3 rounded-2xl flex items-center gap-2 shadow-xl flex-shrink-0"
         >
           <Save className="w-4 h-4" />
           <span className="font-black text-xs uppercase tracking-widest">{saving ? 'Saving…' : 'Save'}</span>
@@ -841,7 +841,7 @@ const FieldEntryPage = () => {
           whileTap={{ scale: 0.98 }}
           onClick={handleSave}
           disabled={saving || processingPhotos}
-          className="w-full sm:w-auto sm:px-12 bg-emerald-600 disabled:opacity-60 text-white p-4 rounded-3xl flex items-center justify-center gap-2 shadow-xl shadow-emerald-600/30"
+          className="w-full sm:w-auto sm:px-12 bg-emerald-600 disabled:opacity-60 text-white p-4 rounded-3xl flex items-center justify-center gap-2 shadow-xl"
         >
           <Save className="w-4 h-4" />
           <span className="font-black text-xs uppercase tracking-widest">

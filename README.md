@@ -19,6 +19,21 @@ The data model is documented as JSDoc typedefs in `src/types/index.js`, so edito
 VS Code still show field hints. Code style is set by `.prettierrc.json`
 (`npx prettier --write .`).
 
+## Design
+
+The look is "field guide meets lab notebook". Design tokens live in `tailwind.config.js`.
+
+- **Type:** Newsreader (serif) for headings and taxon names, which are set in italics as
+  binomials conventionally are. IBM Plex Sans for the interface, and IBM Plex Mono for
+  specimen-label captions, buttons and figures. The fonts are bundled, so the app looks
+  the same offline.
+- **Colour:** moss greens and lichen neutrals; the Tailwind `emerald` and `gray` scales are
+  remapped to them. Text pairs are checked to WCAG AA. Red is kept for safety warnings and
+  the fly agaric.
+- **Imagery:** an original botanical plate of *Amanita muscaria* (`src/components/MushroomPlate.jsx`),
+  labelled with its morphology. Settings → Background switches between the
+  plate (Illustration), your own photo (My photo, stored on this device), or Plain.
+
 ## Screen sizes
 
 One app adapts to the device. The breakpoints are defined once in `tailwind.config.js`

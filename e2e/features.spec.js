@@ -114,3 +114,45 @@ test('dark mode can be chosen and is remembered', async ({ page }) => {
   await page.getByRole('radio', { name: 'Light' }).click();
   await expect(page.locator('html')).not.toHaveClass(/dark/);
 });
+
+test('background can be mycelium, the illustration, your own photo, or plain', async ({ page }) => {
+  // Mycelium (default): the hyphal network behind the sign-in screen, with the plate
+  await page.goto('./');
+  await expect(page.locator('svg.mycelium')).toHaveCount(1);
+  await expect(page.getByRole('img', { name: /Botanical plate of the fly agaric/ }).first()).toBeVisible();
+
+  await enterOffline(page);
+  await page.goto('./#/settings');
+  const group = page.getByRole('radiogroup', { name: 'Background' });
+  await expect(group.getByRole('radio', { name: 'Mycelium' })).toHaveAttribute('aria-checked', 'true');
+
+  // Illustration: no network behind the pages
+  await group.getByRole('radio', { name: 'Illustration' }).click();
+  await expect(group.getByRole('radio', { name: 'Illustration' })).toHaveAttribute('aria-checked', 'true');
+  // only the preview tile in Settings still draws it
+  await expect(page.locator('svg.mycelium')).toHaveCount(1);
+
+  // Plain: no plate
+  await group.getByRole('radio', { name: 'Plain' }).click();
+  await expect(group.getByRole('radio', { name: 'Plain' })).toHaveAttribute('aria-checked', 'true');
+
+  // My photo: choose an image file (a tiny PNG stands in for a photo)
+  const png = Buffer.from(
+    'iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAIAAAD91JpzAAAAFklEQVR4nGNkYPjPwMDAxMDAwMDAAAANGAEFl8pSAAAAAABJRU5ErkJggg==',
+    'base64',
+  );
+  await page.setInputFiles('#bg-photo', { name: 'forest.png', mimeType: 'image/png', buffer: png });
+  await expect(page.getByText('Background photo set')).toBeVisible();
+  await expect(group.getByRole('radio', { name: 'My photo' })).toHaveAttribute('aria-checked', 'true');
+
+  // Signed out, the sign-in screen uses the photo instead of the plate
+  await page.getByRole('button', { name: 'Sign out' }).click();
+  await expect(page.getByRole('button', { name: 'Continue Offline' })).toBeVisible();
+  await expect(page.getByRole('img', { name: /Botanical plate/ })).toHaveCount(0);
+
+  // Removing the photo falls back to the default
+  await page.getByRole('button', { name: 'Continue Offline' }).click();
+  await page.goto('./#/settings');
+  await page.getByRole('button', { name: 'Remove photo' }).click();
+  await expect(group.getByRole('radio', { name: 'Mycelium' })).toHaveAttribute('aria-checked', 'true');
+});

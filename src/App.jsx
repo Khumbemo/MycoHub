@@ -1,5 +1,5 @@
-import { Suspense, lazy } from 'react';
-import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { Suspense, lazy, useEffect } from 'react';
+import { HashRouter, Routes, Route, Navigate, useLocation, useNavigationType } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import MainLayout from './components/layout/MainLayout';
 import LoginPage from './pages/auth/LoginPage';
@@ -61,9 +61,20 @@ const AppRoutes = () => (
 
 // HashRouter works from file://, Capacitor's WebView and any static host
 // without server-side rewrites.
+// Each new page opens at the top; Back keeps the browser's restored position.
+const ScrollToTop = () => {
+  const { pathname } = useLocation();
+  const navType = useNavigationType();
+  useEffect(() => {
+    if (navType !== 'POP') window.scrollTo(0, 0);
+  }, [pathname, navType]);
+  return null;
+};
+
 const App = () => (
   <AuthProvider>
     <HashRouter>
+      <ScrollToTop />
       <AppRoutes />
     </HashRouter>
   </AuthProvider>
