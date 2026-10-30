@@ -454,3 +454,57 @@ em {
 .dark .hover\:border-emerald-600:hover {
   border-color: #5f9170;
 }
+
+/* ---------------------------------------------------------------------------
+   Mycelium background (src/components/MyceliumField.jsx)
+   --------------------------------------------------------------------------- */
+.mycelium {
+  --myc-ink: #2d5c41;
+  --myc-grid: #2d5c41;
+}
+.dark .mycelium {
+  --myc-ink: #9cc7a8;
+  --myc-grid: #9cc7a8;
+}
+.myc-grid {
+  stroke: var(--myc-grid);
+  stroke-opacity: 0.05;
+  stroke-width: 1;
+}
+.myc-grid--major {
+  stroke-opacity: 0.09;
+}
+.myc-hypha {
+  stroke: var(--myc-ink);
+  stroke-opacity: 0.32;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.myc-hypha--mid {
+  stroke-opacity: 0.24;
+  stroke-width: 1.05;
+}
+.myc-hypha--fine {
+  stroke-opacity: 0.18;
+  stroke-width: 0.7;
+}
+.myc-tip {
+  fill: var(--myc-ink);
+  fill-opacity: 0.35;
+}
+.myc-inoculum {
+  fill: var(--myc-ink);
+  fill-opacity: 0.25;
+}
+.myc-dish {
+  stroke: var(--myc-ink);
+  stroke-opacity: 0.16;
+  stroke-width: 1.5;
+}
+.myc-scale {
+  stroke: var(--myc-ink);
+  stroke-opacity: 0.2;
+  stroke-width: 8;
+  stroke-dasharray: 1 14;
+}

@@ -13,6 +13,7 @@ import {
   ImagePlus,
 } from 'lucide-react';
 import MushroomPlate from '../../components/MushroomPlate';
+import MyceliumField from '../../components/MyceliumField';
 import { clearBackgroundPhoto, setBackgroundMode, setBackgroundPhoto, useBackground } from '../../utils/background';
 import { useAuth } from '../../contexts/AuthContext';
 import { localDb } from '../../utils/db';
@@ -204,8 +205,9 @@ const SettingsPage = () => {
       <h3 className="text-xs text-gray-500 uppercase ml-2 pt-2" id="bg-label">
         Background
       </h3>
-      <div role="radiogroup" aria-labelledby="bg-label" className="grid grid-cols-3 gap-2">
+      <div role="radiogroup" aria-labelledby="bg-label" className="grid grid-cols-2 sm:grid-cols-4 gap-2">
         {[
+          ['mycelium', 'Mycelium'],
           ['illustration', 'Illustration'],
           ['photo', 'My photo'],
           ['plain', 'Plain'],
@@ -228,6 +230,11 @@ const SettingsPage = () => {
               }`}
             >
               <span className="block aspect-[4/3] rounded-xl overflow-hidden bg-emerald-50 relative">
+                {value === 'mycelium' && (
+                  <span className="absolute inset-0 bg-paper">
+                    <MyceliumField zoom className="absolute inset-0 w-full h-full" />
+                  </span>
+                )}
                 {value === 'illustration' && (
                   <MushroomPlate labels={false} caption={false} className="absolute inset-0 w-full h-full p-1" />
                 )}
@@ -282,7 +289,8 @@ const SettingsPage = () => {
           </button>
         )}
         <p className="basis-full text-[12.5px] text-gray-500 ml-1">
-          Used on the sign-in screen and the dashboard. Stored on this device only.
+          Mycelium fills every page; the illustration and your photo show on the sign-in screen and the dashboard.
+          Photos are stored on this device only.
         </p>
       </div>
 

@@ -48,7 +48,7 @@ const Hero = ({ pending, total }) => {
         'relative overflow-hidden rounded-3xl border',
         onPhoto
           ? 'bg-ink border-transparent'
-          : bg.mode === 'illustration'
+          : bg.mode === 'illustration' || bg.mode === 'mycelium'
             ? 'bg-emerald-50 border-emerald-100'
             : 'bg-white border-gray-200/80',
       )}
@@ -94,7 +94,7 @@ const Hero = ({ pending, total }) => {
             </Link>
           </div>
         </div>
-        {bg.mode === 'illustration' && (
+        {(bg.mode === 'illustration' || bg.mode === 'mycelium') && (
           <MushroomPlate labels={false} caption={false} className="hidden sm:block w-48 lg:w-64 -my-6 -mr-2" />
         )}
       </div>

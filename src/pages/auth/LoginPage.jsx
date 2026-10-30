@@ -5,6 +5,7 @@ import { LogIn, UserCircle, CloudOff, Info } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import BrandMark from '../../components/BrandMark';
 import MushroomPlate from '../../components/MushroomPlate';
+import MyceliumField from '../../components/MyceliumField';
 import { useBackground } from '../../utils/background';
 import { cn } from '../../utils/cn';
 
@@ -59,6 +60,7 @@ const LoginPage = () => {
         onPhoto ? 'bg-ink' : 'bg-paper',
       )}
     >
+      {bg.mode === 'mycelium' && <MyceliumField className="absolute inset-0 w-full h-full pointer-events-none" />}
       {onPhoto && (
         <>
           <img src={bg.photoUrl} alt="" className="absolute inset-0 w-full h-full object-cover" />
@@ -92,7 +94,7 @@ const LoginPage = () => {
             Record collections in Darwin Core, verify identifications with your peers, and track diversity by site.
           </p>
 
-          {bg.mode === 'illustration' && (
+          {(bg.mode === 'illustration' || bg.mode === 'mycelium') && (
             <>
               <MushroomPlate
                 labels={false}

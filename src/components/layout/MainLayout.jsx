@@ -20,6 +20,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import SafetyDisclaimer from '../SafetyDisclaimer';
 import BrandMark from '../BrandMark';
 import MushroomPlate from '../MushroomPlate';
+import MyceliumField from '../MyceliumField';
 import { useBackground } from '../../utils/background';
 
 // `label` is the short name for the phone tab bar and the rail; `title` is used
@@ -263,8 +264,11 @@ const SideNav = () => {
 };
 
 /** Faint botanical plate behind the pages (Illustration background only). */
-const PlateWatermark = () => {
+const PageBackground = () => {
   const { mode } = useBackground();
+  if (mode === 'mycelium') {
+    return <MyceliumField className="pointer-events-none fixed inset-0 z-0 w-full h-full" />;
+  }
   if (mode !== 'illustration') return null;
   return (
     <div
@@ -319,7 +323,7 @@ const MainLayout = () => {
       )}
     >
       {hasRail && <SideNav />}
-      <PlateWatermark />
+      <PageBackground />
       <div className="relative z-10 flex flex-col min-h-dvh pb-[var(--nav-bottom)] pr-[env(safe-area-inset-right,0px)]">
         <SafetyDisclaimer />
         <TopHeader />
