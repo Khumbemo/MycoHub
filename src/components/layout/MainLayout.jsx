@@ -268,7 +268,7 @@ const PlateWatermark = () => {
   if (mode !== 'illustration') return null;
   return (
     <div
-      className="pointer-events-none fixed bottom-[var(--nav-bottom)] right-0 z-0 w-[min(70vw,30rem)] opacity-[0.07] dark:opacity-[0.09] translate-x-[12%] translate-y-[6%]"
+      className="pointer-events-none hidden rail:block fixed bottom-[var(--nav-bottom)] right-0 z-0 w-[min(70vw,30rem)] opacity-[0.07] dark:opacity-[0.09] translate-x-[12%] translate-y-[6%]"
       aria-hidden="true"
     >
       <MushroomPlate labels={false} caption={false} />
