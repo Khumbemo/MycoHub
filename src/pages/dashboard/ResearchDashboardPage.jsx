@@ -205,7 +205,6 @@ const ResearchDashboardPage = () => {
               ))}
             </div>
           </div>
-          <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-600/20 rounded-full blur-[80px] -mr-32 -mt-32" />
         </div>
       </div>
 

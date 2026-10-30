@@ -36,7 +36,7 @@ const ChatPage = () => {
 
   return (
     <div className="flex flex-col w-full max-w-3xl mx-auto">
-      <div className="bg-emerald-600 p-6 short:p-3 rounded-t-2xl short:rounded-t-3xl shadow-lg flex items-center gap-4">
+      <div className="bg-emerald-600 dark:bg-[#222326] dark:border dark:border-b-0 dark:border-[#2e3034] p-6 short:p-3 rounded-t-2xl short:rounded-t-3xl shadow-lg flex items-center gap-4">
         <div className="w-12 h-12 short:w-9 short:h-9 bg-white/20 rounded-2xl flex items-center justify-center backdrop-blur-md flex-shrink-0">
           <Bot className="text-white w-7 h-7" />
         </div>
