@@ -2,6 +2,7 @@ import { Suspense, lazy, useEffect } from 'react';
 import { HashRouter, Routes, Route, Navigate, useLocation, useNavigationType } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import MainLayout from './components/layout/MainLayout';
+import ErrorBoundary from './components/ErrorBoundary';
 import LoginPage from './pages/auth/LoginPage';
 import DashboardPage from './pages/dashboard/DashboardPage';
 
@@ -32,7 +33,17 @@ const ProtectedRoute = ({ children }) => {
   return <>{children}</>;
 };
 
-const page = (el) => <Suspense fallback={<Spinner />}>{el}</Suspense>;
+// A crash inside one page shows a recovery card there and leaves the
+// navigation working; moving to another page clears it.
+const Page = ({ children }) => {
+  const { pathname } = useLocation();
+  return (
+    <ErrorBoundary resetKey={pathname}>
+      <Suspense fallback={<Spinner />}>{children}</Suspense>
+    </ErrorBoundary>
+  );
+};
+const page = (el) => <Page>{el}</Page>;
 
 const AppRoutes = () => (
   <Routes>
@@ -45,7 +56,7 @@ const AppRoutes = () => (
         </ProtectedRoute>
       }
     >
-      <Route index element={<DashboardPage />} />
+      <Route index element={page(<DashboardPage />)} />
       <Route path="entry" element={page(<FieldEntryPage />)} />
       <Route path="entry/:id" element={page(<FieldEntryPage />)} />
       <Route path="record/:id" element={page(<RecordPage />)} />
@@ -72,12 +83,14 @@ const ScrollToTop = () => {
 };
 
 const App = () => (
-  <AuthProvider>
-    <HashRouter>
-      <ScrollToTop />
-      <AppRoutes />
-    </HashRouter>
-  </AuthProvider>
+  <ErrorBoundary fullPage>
+    <AuthProvider>
+      <HashRouter>
+        <ScrollToTop />
+        <AppRoutes />
+      </HashRouter>
+    </AuthProvider>
+  </ErrorBoundary>
 );
 
 export default App;

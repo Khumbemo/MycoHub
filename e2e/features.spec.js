@@ -156,3 +156,21 @@ test('background can be mycelium, the illustration, your own photo, or plain', a
   await page.getByRole('button', { name: 'Remove photo' }).click();
   await expect(group.getByRole('radio', { name: 'Mycelium' })).toHaveAttribute('aria-checked', 'true');
 });
+
+test.describe('crash recovery', () => {
+  // The service worker would serve the page from its cache, past page.route.
+  test.use({ serviceWorkers: 'block' });
+
+  test('a page that fails to load shows a recovery card, and the rest of the app keeps working', async ({ page }) => {
+    await enterOffline(page);
+    // Simulate an app update that removed the Settings page's file.
+    await page.route(/SettingsPage-[\w-]+\.js$/, (route) => route.fulfill({ status: 404, body: '' }));
+    await page.goto('./#/settings');
+    await expect(page.getByRole('alert').filter({ hasText: 'This page needs a reload' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Reload' })).toBeVisible();
+
+    // Navigating away clears the error without a reload.
+    await page.getByRole('button', { name: 'Dashboard' }).click();
+    await expect(page.getByRole('heading', { name: 'Field Overview' })).toBeVisible();
+  });
+});

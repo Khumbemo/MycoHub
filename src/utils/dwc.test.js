@@ -71,6 +71,25 @@ describe('csvCell', () => {
   it('writes null as an empty cell', () => {
     expect(csvCell(null)).toBe('');
   });
+
+  it('quotes carriage returns so a value cannot split the row', () => {
+    expect(csvCell('a\rb')).toBe('"a\rb"');
+  });
+
+  it('neutralises spreadsheet formulas', () => {
+    expect(csvCell('=HYPERLINK("http://x","y")')).toBe(`"'=HYPERLINK(""http://x"",""y"")"`);
+    expect(csvCell('+cmd')).toBe("'+cmd");
+    expect(csvCell('-2+3')).toBe("'-2+3");
+    expect(csvCell('@SUM(A1)')).toBe("'@SUM(A1)");
+    expect(csvCell('\tx')).toBe("'\tx");
+  });
+
+  it('leaves plain numbers alone, including negative coordinates', () => {
+    expect(csvCell(-74.004)).toBe('-74.004');
+    expect(csvCell('-74.004')).toBe('-74.004');
+    expect(csvCell('+1.5e3')).toBe('+1.5e3');
+    expect(csvCell(0)).toBe('0');
+  });
 });
 
 describe('toCsv', () => {
