@@ -234,9 +234,12 @@ const pull = async () => {
     for (const d of snap.docs) {
       if (await localDb.deletions.get(d.id)) continue; // deleted here, waiting to push
       const data = d.data();
+      // Fall back to the stored local id only for the same owner, so another
+      // user's document can never claim one of this device's records.
+      const byLocalId = data.id ? await localDb.observations.get(String(data.id)) : undefined;
       const local =
         (await localDb.observations.where('remoteId').equals(d.id).first()) ??
-        (data.id ? await localDb.observations.get(String(data.id)) : undefined);
+        (byLocalId && byLocalId.userId === data.userId ? byLocalId : undefined);
       if (local && (local.dirty || local.statusDirty)) continue; // local edits win until pushed
 
       const serverIds = idsByRecord.get(d.id) ?? [];
@@ -276,7 +279,7 @@ const pull = async () => {
         longitude: null,
         ...(local ?? {}),
         ...data,
-        id: local?.id ?? String(data.id ?? d.id),
+        id: local?.id ?? (byLocalId ? d.id : String(data.id ?? d.id)),
         remoteId: d.id,
         photos: local?.photos ?? [],
         mediaUrls: Array.isArray(data.mediaUrls) ? data.mediaUrls : [],
