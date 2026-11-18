@@ -4,7 +4,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { initializeTestEnvironment } from '@firebase/rules-unit-testing';
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from 'firebase/auth';
-import { doc, getDoc } from 'firebase/firestore';
+import { addDoc, collection, doc, getDoc, serverTimestamp } from 'firebase/firestore';
 
 // Node has no navigator.onLine; the app checks it before syncing.
 Object.defineProperty(globalThis.navigator, 'onLine', { value: true, configurable: true });
@@ -162,6 +162,28 @@ describe('sync engine against the emulators', () => {
     const local = await localDb.observations.get(id);
     expect(local.userId).toBe(carol.uid);
     expect(local.synced).toBe(true);
+  });
+
+  it("never lets another user's document take over a local record", async () => {
+    // Mallory publishes a record whose `id` field is Alice's local record id.
+    const mallory = env.authenticatedContext('mallory').firestore();
+    const forged = await addDoc(collection(mallory, 'observations'), {
+      id: recordId,
+      userId: 'mallory',
+      collectorName: 'Mallory',
+      collectionNumber: 'FORGED-1',
+      timestamp: '2026-10-05T12:00:00.000Z',
+      status: 'UNVERIFIED',
+      scientificName: 'Galerina marginata',
+      createdAt: serverTimestamp(),
+    });
+
+    await signInWithEmailAndPassword(auth, 'alice@example.org', 'password123');
+    await syncNow();
+    const mine = await localDb.observations.get(recordId);
+    expect(mine).toMatchObject({ userId: auth.currentUser.uid, remoteId, scientificName: 'Amanita muscaria' });
+    // Mallory's record is kept separately under its own document id.
+    expect(await localDb.observations.get(forged.id)).toMatchObject({ userId: 'mallory', remoteId: forged.id });
   });
 
   it('deletes the server copy on the next sync', async () => {

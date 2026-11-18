@@ -17,7 +17,7 @@ const SpeciesCard = ({ species: s }) => {
       </div>
       {s.commonName && <p className="text-xs font-bold text-gray-500 mb-3">{s.commonName}</p>}
       {s.toxicity && (
-        <p className="flex items-center gap-2 text-[10px] font-black text-rose-600 bg-rose-50 rounded-xl px-3 py-2 mb-3 uppercase tracking-wider">
+        <p className="flex items-center gap-2 text-[10px] font-black text-rose-700 bg-rose-50 rounded-xl px-3 py-2 mb-3 uppercase tracking-wider">
           <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0" /> {s.toxicity}
         </p>
       )}

@@ -693,10 +693,10 @@ const FieldEntryPage = () => {
             <Input id="feso4" label="FeSO4" placeholder="Olive-green" value={form.feso4} onChange={set('feso4')} />
           </div>
           <div className="bg-red-50 p-4 rounded-2xl mt-4">
-            <span className="block text-[10px] font-black text-red-600 uppercase tracking-widest mb-1">
+            <span className="block text-[10px] font-black text-red-700 uppercase tracking-widest mb-1">
               Safety Advisory
             </span>
-            <p className="text-[11px] font-bold text-red-600 mb-3">
+            <p className="text-[11px] font-bold text-red-700 mb-3">
               Never taste a specimen that could be an Amanita, Galerina or other deadly genus. If tasting, chew a tiny
               piece and spit it out. Never swallow.
             </p>

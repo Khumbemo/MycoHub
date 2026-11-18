@@ -179,7 +179,7 @@ const ResearchDashboardPage = () => {
         <div className="bg-gray-900 p-8 rounded-3xl text-white shadow-2xl relative overflow-hidden">
           <div className="relative z-10">
             <h3 className="text-xl font-black tracking-tight mb-2 italic">Phenology</h3>
-            <p className="text-xs text-gray-500 font-bold mb-6">Records per month of collection</p>
+            <p className="text-xs text-gray-400 font-bold mb-6">Records per month of collection</p>
 
             <div className="flex items-end gap-2 h-32 mb-2">
               {m.monthly.map((n, i) => (

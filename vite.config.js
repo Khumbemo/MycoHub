@@ -20,8 +20,8 @@ export default defineConfig(({ mode }) => {
             name: 'MycoHub Research',
             short_name: 'MycoHub',
             description: 'Scientific Mycological Data Collection & Research Platform',
-            theme_color: '#059669',
-            background_color: '#f8faf9',
+            theme_color: '#2d5c41',
+            background_color: '#f7f8f5',
             display: 'standalone',
             start_url: './',
             icons: [
