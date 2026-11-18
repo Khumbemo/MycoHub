@@ -38,9 +38,16 @@ export const DWC_COLUMNS = [
   ],
 ];
 
+// A cell starting with one of these is run as a formula by Excel, LibreOffice
+// and Google Sheets (CSV injection). Plain numbers such as -74.004 are safe.
+const FORMULA_START = /^[=+\-@\t\r]/;
+const PLAIN_NUMBER = /^[+-]?(\d+\.?\d*|\.\d+)([eE][+-]?\d+)?$/;
+
 export const csvCell = (v) => {
-  const s = v === null || v === undefined ? '' : String(v);
-  return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+  let s = v === null || v === undefined ? '' : String(v);
+  // Neutralise formulas with a leading apostrophe, as OWASP recommends.
+  if (FORMULA_START.test(s) && !PLAIN_NUMBER.test(s)) s = `'${s}`;
+  return /[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
 };
 
 export const toCsv = (records) =>
