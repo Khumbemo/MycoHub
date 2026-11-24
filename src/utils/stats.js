@@ -77,3 +77,46 @@ export const groupBySite = (records) => {
   }
   return groups;
 };
+
+/**
+ * Sample-based species accumulation: the mean number of species found in the
+ * first k sampling units, averaged over random orderings of the units (as in
+ * EstimateS's randomised curves). `units` is an array of species-name sets.
+ */
+export const accumulationCurve = (units, permutations = 100, rand = Math.random) => {
+  const n = units.length;
+  if (n === 0) return [];
+  const sums = new Array(n).fill(0);
+  const order = units.map((_, i) => i);
+  for (let p = 0; p < permutations; p++) {
+    for (let i = n - 1; i > 0; i--) {
+      const j = Math.floor(rand() * (i + 1));
+      [order[i], order[j]] = [order[j], order[i]];
+    }
+    const seen = new Set();
+    order.forEach((u, k) => {
+      for (const s of units[u]) seen.add(s);
+      sums[k] += seen.size;
+    });
+  }
+  return sums.map((s, k) => ({ n: k + 1, s: s / permutations }));
+};
+
+/**
+ * Frequency of occurrence: the share of sampling units in which each species
+ * was recorded, highest first. `units` is an array of species-name sets.
+ */
+export const frequencies = (units) => {
+  if (units.length === 0) return [];
+  const hits = new Map();
+  for (const u of units) for (const s of u) hits.set(s, (hits.get(s) ?? 0) + 1);
+  return [...hits.entries()]
+    .map(([species, k]) => ({ species, units: k, frequency: k / units.length }))
+    .sort((a, b) => b.frequency - a.frequency || a.species.localeCompare(b.species));
+};
+
+/** Canonical species key used across the statistics (trimmed, sentence case). */
+export const speciesKey = (name) => {
+  const s = name.trim().replace(/\s+/g, ' ');
+  return s ? s.charAt(0).toUpperCase() + s.slice(1).toLowerCase() : '';
+};

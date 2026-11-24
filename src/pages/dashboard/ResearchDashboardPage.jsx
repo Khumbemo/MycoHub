@@ -4,6 +4,7 @@ import { FlaskConical, ClipboardList, Binary, Sigma, Telescope, MapPin } from 'l
 import { useLocalRecords } from '../../utils/observations';
 import { chao1, groupBySite, rarefactionCurve, shannonIndex, speciesCounts } from '../../utils/stats';
 import RarefactionChart from '../../components/RarefactionChart';
+import SurveyComparison from '../../components/SurveyComparison';
 
 // Tailwind only ships classes it can see in full, so metric colors are listed explicitly.
 const metricColors = {
@@ -164,6 +165,8 @@ const ResearchDashboardPage = () => {
           hint={m.evenness === null ? 'Needs at least 2 species' : 'H′ / ln S, from 0 to 1'}
         />
       </div>
+
+      <SurveyComparison records={all} />
 
       <div className="grid gap-8 mb-8 xl:grid-cols-2 xl:items-start">
         {m.curve.length > 1 && (

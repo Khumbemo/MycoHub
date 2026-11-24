@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import {
   Camera,
   MapPin,
@@ -15,6 +15,7 @@ import {
   Search,
   Loader2,
   ImagePlus,
+  ClipboardList,
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useAuth } from '../../contexts/AuthContext';
@@ -24,6 +25,8 @@ import { canonicalName, matchName } from '../../utils/gbif';
 import { formatSporeStats, parseSporeMeasurements, sporeStats } from '../../utils/microscopy';
 import { compressImage } from '../../utils/images';
 import { getCurrentFix, isNative, takeNativePhoto } from '../../utils/native';
+import { linkFields, useSurveys } from '../../utils/surveys';
+import { methodById } from '../../utils/methods';
 
 // Tailwind only ships classes it can see in full, so section colors are listed explicitly.
 const sectionColors = {
@@ -275,6 +278,28 @@ const FieldEntryPage = () => {
   const [processingPhotos, setProcessingPhotos] = useState(false);
   const [notice, setNotice] = useState(null);
   const [loadedId, setLoadedId] = useState(null);
+  const [search] = useSearchParams();
+  const [surveyId, setSurveyId] = useState(() => (editId ? '' : (search.get('survey') ?? '')));
+  const [unitId, setUnitId] = useState(() => (editId ? '' : (search.get('unit') ?? '')));
+  const surveys = useSurveys();
+  const survey = surveys?.find((x) => x.id === surveyId) ?? null;
+  // Surveys a record can join: in progress, recording fruit bodies (plus the record's own survey).
+  const joinable = (surveys ?? []).filter(
+    (x) => x.id === surveyId || (x.status === 'active' && methodById(x.method)?.counts),
+  );
+  const prefilledFor = useRef(null);
+
+  // Start a new record with the survey's site and coordinates.
+  useEffect(() => {
+    if (isEdit || !survey || prefilledFor.current === survey.id) return;
+    prefilledFor.current = survey.id;
+    setForm((prev) => ({
+      ...prev,
+      locality: prev.locality || survey.site.locality,
+      latitude: prev.latitude || (survey.site.latitude != null ? String(survey.site.latitude) : ''),
+      longitude: prev.longitude || (survey.site.longitude != null ? String(survey.site.longitude) : ''),
+    }));
+  }, [isEdit, survey]);
 
   // Load the record once when editing.
   if (isEdit && existing && loadedId !== existing.id) {
@@ -282,6 +307,8 @@ const FieldEntryPage = () => {
     setForm(recordToForm(existing));
     setPhotos(existing.photos.map((b, i) => toPhoto(b, `Photo ${i + 1}`)));
     setTaxonomy(existing.taxonomy);
+    setSurveyId(existing.surveyId ?? '');
+    setUnitId(existing.samplingUnitId ?? '');
   }
 
   const spores = useMemo(() => {
@@ -368,7 +395,15 @@ const FieldEntryPage = () => {
     setSaving(true);
     setNotice(null);
     try {
-      const fields = { ...formToFields(form), taxonomy, photos: photos.map((p) => p.blob) };
+      // Link to the chosen survey; an edit that leaves the link alone keeps the stored snapshot.
+      const link = survey
+        ? linkFields(survey, unitId)
+        : surveyId
+          ? {} // survey not on this device (e.g. synced from another): keep the stored link
+          : !isEdit || existing?.surveyId
+            ? linkFields(null)
+            : {};
+      const fields = { ...formToFields(form), ...link, taxonomy, photos: photos.map((p) => p.blob) };
       if (isEdit && existing) {
         await updateObservation(existing.id, fields);
         navigate(`/record/${existing.id}`);
@@ -383,7 +418,18 @@ const FieldEntryPage = () => {
               text: `Saved ${form.collectionNumber} on this device. It will sync automatically when you're signed in and online.`,
             },
       );
-      setForm(emptyForm(form.collectorName));
+      // In a survey, keep the site for the next record in the same unit.
+      setForm({
+        ...emptyForm(form.collectorName),
+        ...(survey
+          ? {
+              locality: form.locality,
+              latitude: form.latitude,
+              longitude: form.longitude,
+              coordinateUncertainty: form.coordinateUncertainty,
+            }
+          : {}),
+      });
       setPhotos([]);
       setTaxonomy(undefined);
       setNameCheck(null);
@@ -447,7 +493,95 @@ const FieldEntryPage = () => {
         </div>
       )}
 
+      {survey && (
+        <div className="mb-6 p-4 rounded-2xl border border-emerald-200 bg-emerald-50 flex flex-wrap items-center justify-between gap-3 text-sm">
+          <span className="min-w-0">
+            Recording in <span className="font-semibold">{survey.name}</span>
+            {unitId && survey.units.find((u) => u.id === unitId) && (
+              <> · {survey.units.find((u) => u.id === unitId).label}</>
+            )}
+          </span>
+          <Link to={`/surveys/${survey.id}`} className="text-[11px] uppercase text-emerald-800 underline">
+            Back to survey
+          </Link>
+        </div>
+      )}
+
       <div className="xl:columns-2 xl:gap-6">
+        {(joinable.length > 0 || surveyId) && (
+          <FormSection title="Survey & abundance" icon={ClipboardList} color="teal">
+            <Select
+              id="surveyId"
+              label="Survey (sampling event)"
+              value={surveyId}
+              onChange={(v) => {
+                setSurveyId(v);
+                setUnitId('');
+              }}
+              options={[
+                { value: '', label: 'None: not part of a survey' },
+                ...(surveyId && !survey
+                  ? [{ value: surveyId, label: `${existing?.survey?.name ?? 'Survey'} (not on this device)` }]
+                  : []),
+                ...joinable.map((x) => ({
+                  value: x.id,
+                  label: x.name.startsWith(methodById(x.method)?.name ?? '')
+                    ? x.name
+                    : `${x.name} (${methodById(x.method)?.name})`,
+                })),
+              ]}
+            />
+            {survey && survey.units.length > 0 && (
+              <Select
+                id="samplingUnitId"
+                label={`${methodById(survey.method)?.unitNoun ?? 'Unit'} (sampling unit)`}
+                value={unitId}
+                onChange={setUnitId}
+                options={[
+                  { value: '', label: 'Not in a specific unit' },
+                  ...survey.units.map((u) => ({ value: u.id, label: u.label })),
+                ]}
+              />
+            )}
+            <fieldset className="mb-5">
+              <legend className={labelClass}>Abundance</legend>
+              <div className="grid grid-cols-2 gap-2" role="radiogroup" aria-label="Abundance">
+                {[
+                  ['sporocarps', 'Fruit bodies counted'],
+                  ['presence', 'Presence only'],
+                ].map(([value, text]) => (
+                  <button
+                    key={value}
+                    type="button"
+                    role="radio"
+                    aria-checked={form.organismQuantityType === value}
+                    onClick={() => set('organismQuantityType')(value)}
+                    className={`p-3 rounded-2xl text-[11px] font-black uppercase tracking-widest border ${
+                      form.organismQuantityType === value
+                        ? 'bg-emerald-600 text-white border-emerald-600'
+                        : 'bg-gray-50 text-gray-600 border-gray-100'
+                    }`}
+                  >
+                    {text}
+                  </button>
+                ))}
+              </div>
+            </fieldset>
+            {form.organismQuantityType === 'sporocarps' && (
+              <Input
+                id="organismQuantity"
+                label="Fruit bodies (organismQuantity)"
+                placeholder="e.g. 7"
+                inputMode="numeric"
+                value={form.organismQuantity}
+                onChange={set('organismQuantity')}
+                error={errors.organismQuantity}
+                hint="Count every fruit body of this species in the unit, including each one in a cluster."
+              />
+            )}
+          </FormSection>
+        )}
+
         <FormSection title="Collection Metadata" icon={Database} color="blue">
           <div className="grid grid-cols-2 gap-x-4">
             <Input

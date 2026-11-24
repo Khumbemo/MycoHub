@@ -92,7 +92,9 @@ test('research lab shows Chao1 and a rarefaction curve for a site', async ({ pag
   // Two singletons, no doubletons: S_chao1 = 2 + 2·1 / (2·1) = 3.0
   await expect(page.getByText('Chao1 Estimated Richness').locator('..')).toContainText('3.0');
   await expect(page.getByText('Sampled 67% of estimated species')).toBeVisible();
-  await expect(page.getByRole('img', { name: /Rarefaction curve: 2 species observed in 2 records/ })).toBeVisible();
+  await expect(
+    page.getByRole('img', { name: /Species accumulation curve: 2 species observed in 2 records/ }),
+  ).toBeVisible();
 });
 
 test('map appears for georeferenced records', async ({ page }) => {

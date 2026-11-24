@@ -14,6 +14,9 @@ const ResearchDashboardPage = lazy(() => import('./pages/dashboard/ResearchDashb
 const ChatPage = lazy(() => import('./pages/chat/ChatPage'));
 const SettingsPage = lazy(() => import('./pages/settings/SettingsPage'));
 const RecordPage = lazy(() => import('./pages/record/RecordPage'));
+const SurveysPage = lazy(() => import('./pages/surveys/SurveysPage'));
+const NewSurveyPage = lazy(() => import('./pages/surveys/NewSurveyPage'));
+const SurveyDetailPage = lazy(() => import('./pages/surveys/SurveyDetailPage'));
 
 const Spinner = () => (
   <div className="min-h-[40vh] flex items-center justify-center" role="status" aria-label="Loading">
@@ -60,6 +63,9 @@ const AppRoutes = () => (
       <Route path="entry" element={page(<FieldEntryPage />)} />
       <Route path="entry/:id" element={page(<FieldEntryPage />)} />
       <Route path="record/:id" element={page(<RecordPage />)} />
+      <Route path="surveys" element={page(<SurveysPage />)} />
+      <Route path="surveys/new" element={page(<NewSurveyPage />)} />
+      <Route path="surveys/:id" element={page(<SurveyDetailPage />)} />
       <Route path="species" element={page(<SpeciesDBPage />)} />
       <Route path="community" element={page(<CommunityPage />)} />
       <Route path="research" element={page(<ResearchDashboardPage />)} />
