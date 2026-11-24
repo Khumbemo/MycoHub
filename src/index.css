@@ -428,3 +428,44 @@ em {
   background-color: #1a1b1e;
   box-shadow: inset 0 0 0 1px #2e3034;
 }
+
+/* Plot plan (src/components/PlotMap.jsx) */
+.plotmap {
+  --pm-ink: #16211a;
+  --pm-accent: #2d5c41;
+}
+.dark .plotmap {
+  --pm-ink: #e6e7e9;
+  --pm-accent: #9cc7a8;
+}
+.plotmap-plot {
+  fill: none;
+  stroke: var(--pm-ink);
+  stroke-opacity: 0.45;
+  stroke-width: 0.3%;
+  stroke-dasharray: 1.5% 1%;
+}
+.plotmap-unit {
+  fill: var(--pm-accent);
+  fill-opacity: 0.08;
+  stroke: var(--pm-accent);
+  stroke-width: 0.35%;
+}
+.plotmap-unit--done {
+  fill-opacity: 0.55;
+}
+.plotmap-label {
+  fill: var(--pm-ink);
+  font-family: theme('fontFamily.mono');
+  font-weight: 600;
+}
+.plotmap-scale {
+  stroke: var(--pm-ink);
+  stroke-width: 0.5%;
+}
+.dark .bg-emerald-50\/60 {
+  background-color: #1f2a24;
+}
+.dark .border-emerald-200 {
+  border-color: #2f4a3a;
+}

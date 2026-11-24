@@ -164,6 +164,32 @@ describe('sync engine against the emulators', () => {
     expect(local.synced).toBe(true);
   });
 
+  it('syncs the sampling design with a linked record', async () => {
+    const alice = await signIn('alice@example.org');
+    const linked = {
+      surveyId: 'survey-1',
+      samplingUnitId: 'Q2',
+      samplingUnitLabel: 'Q2',
+      organismQuantity: 5,
+      organismQuantityType: 'sporocarps',
+      survey: {
+        id: 'survey-1',
+        name: 'Plot A',
+        method: 'quadrat',
+        protocol: 'Quadrats, 5 × 5 m (n = 10), random placement in a 50 × 50 m plot',
+        sampleSizeValue: 50,
+        sampleSizeUnit: 'square metre',
+        effort: '1 observer',
+        startedAt: '2026-10-04T09:00:00.000Z',
+        endedAt: null,
+      },
+    };
+    const { id, synced } = await obs.saveObservation(draft(alice.uid, { collectionNumber: 'SV-1', ...linked }));
+    expect(synced).toBe(true);
+    const local = await localDb.observations.get(id);
+    expect(await serverDoc(local.remoteId)).toMatchObject(linked);
+  });
+
   it("never lets another user's document take over a local record", async () => {
     // Mallory publishes a record whose `id` field is Alice's local record id.
     const mallory = env.authenticatedContext('mallory').firestore();

@@ -39,6 +39,11 @@ export class MycoHubDB extends Dexie {
     this.version(4).stores({
       prefs: 'key',
     });
+    // Sampling designs (surveys); records link to them by surveyId.
+    this.version(5).stores({
+      observations: 'id, userId, status, timestamp, collectionNumber, scientificName, remoteId, nextSyncAt, surveyId',
+      surveys: 'id, userId, status, method, startedAt',
+    });
   }
 }
 

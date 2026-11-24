@@ -31,7 +31,13 @@ const niceStep = (max, target = 4) => {
  * number of records n, with the Chao1 richness estimate as a dashed reference.
  * A curve still rising at its end means the site is under-sampled.
  */
-const RarefactionChart = ({ points, chao1 }) => {
+const RarefactionChart = ({
+  points,
+  chao1 = null,
+  xLabel = 'records sampled',
+  unit = 'record',
+  caption = 'Expected species for a random subsample of records (Hurlbert 1971).',
+}) => {
   const [hover, setHover] = useState(null);
   const figRef = useRef(null);
   const W = useWidth(figRef);
@@ -40,9 +46,9 @@ const RarefactionChart = ({ points, chao1 }) => {
   const S = points[points.length - 1]?.s ?? 0;
 
   const { x, y, yTicks, xTicks } = useMemo(() => {
-    const yMax = Math.max(1, Math.ceil(Math.max(S, chao1) * 1.1));
+    const yMax = Math.max(1, Math.ceil(Math.max(S, chao1 ?? 0) * 1.1));
     const ys = niceStep(yMax);
-    const xs = niceStep(N, W > 520 ? 8 : 4);
+    const xs = Math.max(1, niceStep(N, W > 520 ? 8 : 4)); // whole records or units only
     const x = (n) => PAD.left + (n / Math.max(N, 1)) * (W - PAD.left - PAD.right);
     const y = (s) => H - PAD.bottom - (s / yMax) * (H - PAD.top - PAD.bottom);
     const yTicks = [];
@@ -71,7 +77,7 @@ const RarefactionChart = ({ points, chao1 }) => {
         viewBox={`0 0 ${W} ${H}`}
         className="w-full h-auto chart"
         role="img"
-        aria-label={`Rarefaction curve: ${S} species observed in ${N} records; Chao1 estimates ${chao1.toFixed(1)} species.`}
+        aria-label={`Species accumulation curve: ${S} species observed in ${N} ${unit}s${chao1 != null ? `; Chao1 estimates ${chao1.toFixed(1)} species` : ''}.`}
       >
         {/* recessive grid */}
         {yTicks.map((t) => (
@@ -88,20 +94,24 @@ const RarefactionChart = ({ points, chao1 }) => {
           </text>
         ))}
         <text x={(PAD.left + W - PAD.right) / 2} y={H - 2} textAnchor="middle" className="chart-axis">
-          records sampled
+          {xLabel}
         </text>
 
         {/* Chao1 reference */}
-        <line x1={PAD.left} x2={W - PAD.right} y1={y(chao1)} y2={y(chao1)} className="chart-ref" />
-        <text x={W - PAD.right} y={y(chao1) - 5} textAnchor="end" className="chart-label">
-          Chao1 ≈ {chao1.toFixed(1)}
-        </text>
+        {chao1 != null && (
+          <>
+            <line x1={PAD.left} x2={W - PAD.right} y1={y(chao1)} y2={y(chao1)} className="chart-ref" />
+            <text x={W - PAD.right} y={y(chao1) - 5} textAnchor="end" className="chart-label">
+              Chao1 ≈ {chao1.toFixed(1)}
+            </text>
+          </>
+        )}
 
         {/* curve + endpoint */}
         <path d={path} className="chart-line" fill="none" />
         <circle cx={x(N)} cy={y(S)} r={4} className="chart-dot" />
         <text x={x(N) - 6} y={y(S) + 14} textAnchor="end" className="chart-label">
-          {S} observed
+          {Number.isInteger(S) ? S : S.toFixed(1)} observed
         </text>
 
         {/* hover layer */}
@@ -123,9 +133,7 @@ const RarefactionChart = ({ points, chao1 }) => {
         />
       </svg>
       <figcaption className="text-[11px] font-bold text-gray-600 mt-2 min-h-[1.25rem]" aria-live="polite">
-        {hp
-          ? `${hp.n} record${hp.n === 1 ? '' : 's'} → ${hp.s.toFixed(2)} species expected`
-          : 'Expected species for a random subsample of records (Hurlbert 1971).'}
+        {hp ? `${hp.n} ${unit}${hp.n === 1 ? '' : 's'} → ${hp.s.toFixed(2)} species expected` : caption}
       </figcaption>
     </figure>
   );

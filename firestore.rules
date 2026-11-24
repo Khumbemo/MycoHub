@@ -30,6 +30,28 @@ service cloud.firestore {
       return v is string && v.size() <= max;
     }
 
+    function optionalString(v, max) {
+      return v == null || shortString(v, max);
+    }
+
+    // Sampling-design fields on an observation (see src/utils/methods.js).
+    function validSampling(d) {
+      return optionalString(d.get('surveyId', null), 100)
+        && optionalString(d.get('samplingUnitId', null), 100)
+        && optionalString(d.get('samplingUnitLabel', null), 100)
+        && (d.get('organismQuantity', null) == null
+            || (d.organismQuantity is int && d.organismQuantity >= 0 && d.organismQuantity <= 100000))
+        && d.get('organismQuantityType', null) in [null, 'sporocarps', 'presence']
+        && (d.get('survey', null) == null
+            || (d.survey is map
+                && d.survey.keys().hasOnly(['id', 'name', 'method', 'protocol', 'sampleSizeValue',
+                                            'sampleSizeUnit', 'effort', 'startedAt', 'endedAt'])
+                && shortString(d.survey.get('method', ''), 40)
+                && optionalString(d.survey.get('name', null), 200)
+                && optionalString(d.survey.get('protocol', null), 1000)
+                && optionalString(d.survey.get('effort', null), 500)));
+    }
+
     // ---- User profiles -------------------------------------------------------
     match /users/{uid} {
       allow read: if signedIn() && (request.auth.uid == uid || isCurator());
@@ -63,7 +85,9 @@ service cloud.firestore {
             'sporePrintColor', 'sporeMeasurements', 'melzers', 'clampConnections',
             'trophicMode', 'substrate', 'hostSpecies', 'habitatType',
             'preserved', 'dnaExtracted', 'herbariumCode', 'accessionNumber',
-            'mediaUrls', 'createdAt', 'updatedAt'])
+            'mediaUrls', 'createdAt', 'updatedAt',
+            'surveyId', 'survey', 'samplingUnitId', 'samplingUnitLabel',
+            'organismQuantity', 'organismQuantityType'])
           && d.keys().hasAll(['userId', 'collectorName', 'collectionNumber', 'timestamp', 'status', 'scientificName'])
           && shortString(d.collectorName, 200) && d.collectorName.size() > 0
           && shortString(d.collectionNumber, 100) && d.collectionNumber.size() > 0
@@ -76,7 +100,8 @@ service cloud.firestore {
               || ((d.coordinateUncertaintyInMeters is int || d.coordinateUncertaintyInMeters is float)
                   && d.coordinateUncertaintyInMeters >= 0 && d.coordinateUncertaintyInMeters <= 20037509))
           && (!('sporeMeasurements' in d) || shortString(d.sporeMeasurements, 5000))
-          && (!('taxonomy' in d) || d.taxonomy is map);
+          && (!('taxonomy' in d) || d.taxonomy is map)
+          && validSampling(d);
       }
 
       allow read: if signedIn();

@@ -36,12 +36,23 @@ export const emptyForm = (collectorName) => ({
   dnaExtracted: false,
   herbariumCode: '',
   accessionNumber: '',
+  // Sampling design: abundance in the sampling unit (Darwin Core organismQuantity).
+  organismQuantity: '',
+  organismQuantityType: 'sporocarps',
 });
 
 export const parseCoord = (raw, limit) => {
   if (!raw.trim()) return null;
   const n = Number(raw);
   if (!Number.isFinite(n) || Math.abs(n) > limit) return undefined;
+  return n;
+};
+
+/** Fruit-body count: blank, or a whole number from 0 to 100 000. */
+export const parseQuantity = (raw) => {
+  if (!String(raw ?? '').trim()) return null;
+  const n = Number(raw);
+  if (!Number.isInteger(n) || n < 0 || n > 100_000) return undefined;
   return n;
 };
 
@@ -62,6 +73,7 @@ export const validate = (f) => {
   if (parseCoord(f.longitude, 180) === undefined) e.longitude = 'Decimal degrees, −180 to 180';
   if (parseUncertainty(f.coordinateUncertainty) === undefined) e.coordinateUncertainty = 'Metres, 0 or more';
   if (!f.eventDate) e.eventDate = 'Required';
+  if (parseQuantity(f.organismQuantity) === undefined) e.organismQuantity = 'A whole number, 0 or more';
   if (f.sporeMeasurements.trim() && parseSporeMeasurements(f.sporeMeasurements).invalid.length > 0) {
     e.sporeMeasurements = 'Use length × width pairs in µm, e.g. 9.5 x 7, 10 x 7.5';
   }
@@ -70,7 +82,8 @@ export const validate = (f) => {
 
 /** Form values → record fields (everything but identity, photos and sync bookkeeping). */
 export const formToFields = (f) => {
-  const { eventDate, latitude, longitude, coordinateUncertainty, ...rest } = f;
+  const { eventDate, latitude, longitude, coordinateUncertainty, organismQuantity, organismQuantityType, ...rest } = f;
+  const presenceOnly = organismQuantityType === 'presence';
   return {
     ...rest,
     collectorName: rest.collectorName.trim(),
@@ -81,6 +94,8 @@ export const formToFields = (f) => {
     latitude: parseCoord(latitude, 90) ?? null,
     longitude: parseCoord(longitude, 180) ?? null,
     coordinateUncertaintyInMeters: parseUncertainty(coordinateUncertainty) ?? null,
+    organismQuantity: presenceOnly ? null : (parseQuantity(organismQuantity) ?? null),
+    organismQuantityType: presenceOnly ? 'presence' : parseQuantity(organismQuantity) != null ? 'sporocarps' : null,
   };
 };
 
@@ -118,4 +133,6 @@ export const recordToForm = (r) => ({
   dnaExtracted: r.dnaExtracted,
   herbariumCode: r.herbariumCode,
   accessionNumber: r.accessionNumber,
+  organismQuantity: r.organismQuantity == null ? '' : String(r.organismQuantity),
+  organismQuantityType: r.organismQuantityType === 'presence' ? 'presence' : 'sporocarps',
 });

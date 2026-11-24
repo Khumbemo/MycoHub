@@ -122,6 +122,33 @@ The rule lives in `functions/consensus.js`, which both the app and the Cloud Fun
 - The **Darwin Core CSV** includes taxonID, higher classification, coordinate uncertainty and
   a spore summary in `occurrenceRemarks`.
 
+## Surveys and sampling design
+
+A **survey** records how you searched, so richness and density can be compared fairly
+between sites and visits. Choose one of seven designs, following the field methods for
+macrofungi in Mueller, Bills & Foster (eds.) 2004, *Biodiversity of Fungi: Inventory and
+Monitoring Methods* (Elsevier):
+
+| Method | Sampling unit | Standardised by |
+|---|---|---|
+| Opportunistic search | none | (not comparable; for species lists) |
+| Timed search | none | person-hours (built-in timer with pause) |
+| Quadrats | quadrat (random, grid or chosen placement, drawn to scale) | area; species at a common number of quadrats |
+| Belt transect | segment | area; species at a common number of segments |
+| Circular plots | plot | area; species at a common number of plots |
+| Woody debris survey | log (decay class 1–5, length, diameter) | number of logs |
+| Soil cores (DNA) | core (labelled sample codes) | soil volume |
+
+Records made in a survey link to their sampling unit and can carry a fruit-body count
+(`organismQuantity`) or presence only. Each survey page shows the effort, a species
+accumulation curve over sampling units, frequency of occurrence, a draft Methods paragraph,
+and exports a Darwin Core **event table** (the survey plus one event per completed unit)
+and **occurrence table** linked by `eventID`, the layout GBIF uses for sampling-event
+datasets. Research Lab compares surveys only within one method.
+
+Surveys live on the device; every linked record carries a snapshot of its survey's design
+(`samplingProtocol`, sample size, effort), so synced records keep their methodology.
+
 ## Security model
 
 - **Roles** (`COLLECTOR` < `IDENTIFIER` < `CURATOR` < `ADMIN`) come only from Firebase

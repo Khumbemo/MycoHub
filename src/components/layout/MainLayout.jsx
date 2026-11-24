@@ -11,6 +11,7 @@ import {
   MessageCircle,
   CloudOff,
   RefreshCw,
+  ClipboardList,
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { startAutoSync, useSyncState } from '../../utils/sync';
@@ -29,6 +30,7 @@ const navItems = [
   { to: '/', icon: Home, label: 'Dash', title: 'Dashboard' },
   { to: '/research', icon: Activity, label: 'Labs', title: 'Research Lab' },
   { to: '/entry', icon: PlusSquare, label: 'Entry', title: 'New Record' },
+  { to: '/surveys', icon: ClipboardList, label: 'Survey', title: 'Surveys' },
   { to: '/species', icon: BookOpen, label: 'Taxa', title: 'Taxonomy' },
   { to: '/chat', icon: MessageCircle, label: 'Ask', title: 'Ask MycoAssistant' },
   { to: '/community', icon: Users, label: 'Review', title: 'Review' },
@@ -41,6 +43,8 @@ const subPageTitle = (pathname) => {
   if (first === 'settings') return 'Settings & Profile';
   if (first === 'record') return 'Record';
   if (first === 'entry' && second) return 'Edit Record';
+  if (first === 'surveys' && second === 'new') return 'New Survey';
+  if (first === 'surveys' && second) return 'Survey';
   return undefined;
 };
 

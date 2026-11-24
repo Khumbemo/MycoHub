@@ -28,6 +28,13 @@ export const backoffMs = (attempts) => Math.min(30 * 60_000, 15_000 * 2 ** Math.
 
 /** Fields the owner may write. Must match the allow-list in firestore.rules. */
 export const CONTENT_FIELDS = [
+  // Sampling design (see utils/methods.js)
+  'surveyId',
+  'survey',
+  'samplingUnitId',
+  'samplingUnitLabel',
+  'organismQuantity',
+  'organismQuantityType',
   'collectorName',
   'collectionNumber',
   'timestamp',

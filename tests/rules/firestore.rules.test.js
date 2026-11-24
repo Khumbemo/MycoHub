@@ -216,6 +216,47 @@ describe('observations: science fields', () => {
   });
 });
 
+describe('observations: sampling design', () => {
+  const linked = {
+    surveyId: 'survey-1',
+    samplingUnitId: 'Q3',
+    samplingUnitLabel: 'Q3',
+    organismQuantity: 4,
+    organismQuantityType: 'sporocarps',
+    survey: {
+      id: 'survey-1',
+      name: 'Plot A, autumn',
+      method: 'quadrat',
+      protocol: 'Quadrats, 5 × 5 m (n = 10), random placement in a 50 × 50 m plot',
+      sampleSizeValue: 250,
+      sampleSizeUnit: 'square metre',
+      effort: '2 observers; 120 min; 4 person-hours',
+      startedAt: '2026-10-04T09:00:00.000Z',
+      endedAt: null,
+    },
+  };
+
+  it('accepts a record linked to a survey and sampling unit, with a count', async () => {
+    await assertSucceeds(setDoc(doc(asUser('alice'), 'observations/o1'), record('alice', linked)));
+    await assertSucceeds(
+      setDoc(
+        doc(asUser('alice'), 'observations/o2'),
+        record('alice', { ...linked, organismQuantity: null, organismQuantityType: 'presence' }),
+      ),
+    );
+  });
+
+  it('rejects bad counts, unknown count types and unexpected survey fields', async () => {
+    const at = (id, overrides) =>
+      assertFails(setDoc(doc(asUser('alice'), `observations/${id}`), record('alice', { ...linked, ...overrides })));
+    await at('o1', { organismQuantity: -1 });
+    await at('o2', { organismQuantity: 2.5 });
+    await at('o3', { organismQuantityType: 'individuals' });
+    await at('o4', { survey: { ...linked.survey, secret: 'x' } });
+    await at('o5', { survey: 'quadrat' });
+  });
+});
+
 describe('observations/{id}/identifications/{uid}', () => {
   const ident = (uid, role = 'COLLECTOR', overrides = {}) => ({
     userId: uid,

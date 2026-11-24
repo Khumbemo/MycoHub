@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { csvCell, toCsv, DWC_COLUMNS } from './dwc';
+import { csvCell, toCsv, DWC_COLUMNS, EVENT_COLUMNS, surveyEvents, toEventsCsv } from './dwc';
 
 const record = (overrides = {}) => ({
   id: 'local-1',
@@ -124,5 +124,58 @@ describe('toCsv', () => {
     const cells = row.match(/("([^"]|"")*"|[^,]*)(,|$)/g).map((c) => c.replace(/,$/, ''));
     expect(cells[cols.indexOf('geodeticDatum')]).toBe('');
     expect(cells[cols.indexOf('basisOfRecord')]).toBe('HumanObservation');
+  });
+});
+
+describe('sampling-event export', () => {
+  const survey = {
+    id: 'sv1',
+    name: 'Plot A',
+    method: 'quadrat',
+    params: { sideM: 2, count: 2, placement: 'subjective', plotWidthM: 20, plotLengthM: 20, observers: 1 },
+    units: [
+      { id: 'Q1', label: 'Q1', done: true },
+      { id: 'Q2', label: 'Q2', done: false },
+    ],
+    site: { locality: 'Black Rock', latitude: 41.4, longitude: -74 },
+    startedAt: '2026-10-04T09:00:00.000Z',
+    endedAt: '2026-10-04T10:00:00.000Z',
+    notes: '',
+  };
+
+  it('writes a parent survey event and one child event per completed unit', () => {
+    const rows = surveyEvents(survey);
+    expect(rows).toHaveLength(2);
+    expect(rows[0]).toMatchObject({
+      eventID: 'sv1',
+      parentEventID: '',
+      eventType: 'Survey',
+      eventDate: '2026-10-04T09:00:00.000Z/2026-10-04T10:00:00.000Z',
+      sampleSizeValue: 4,
+      sampleSizeUnit: 'square metre',
+      geodeticDatum: 'WGS84',
+    });
+    expect(rows[1]).toMatchObject({ eventID: 'sv1:Q1', parentEventID: 'sv1', sampleSizeValue: 4, eventType: 'Sample' });
+    expect(toEventsCsv(survey).split('\n')[0]).toBe(EVENT_COLUMNS.join(','));
+  });
+
+  it('links occurrences to their sampling-unit event, with counts', () => {
+    const [header, row] = toCsv([
+      record({
+        locality: 'Black Rock', // no comma, so the row can be split naively
+        surveyId: 'sv1',
+        samplingUnitId: 'Q1',
+        organismQuantity: 7,
+        organismQuantityType: 'sporocarps',
+        survey: { protocol: 'Quadrats', effort: '1 observer' },
+      }),
+    ]).split('\n');
+    const cols = header.split(',');
+    const cell = (name) => row.split(',')[cols.indexOf(name)];
+    expect(cell('eventID')).toBe('sv1:Q1');
+    expect(cell('parentEventID')).toBe('sv1');
+    expect(cell('organismQuantity')).toBe('7');
+    expect(cell('organismQuantityType')).toBe('sporocarps');
+    expect(cell('occurrenceStatus')).toBe('present');
   });
 });
