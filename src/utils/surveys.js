@@ -52,49 +52,62 @@ export const createSurvey = async ({ userId, name, method, params, site, repeatO
   return { id };
 };
 
-/** Patch a survey and refresh the design snapshot on its linked records. */
-export const updateSurvey = async (id, patch) => {
-  await localDb.surveys.update(id, { ...patch, updatedAt: new Date().toISOString() });
+/**
+ * Change a survey and refresh the design snapshot on its linked records.
+ * `change` gets the latest stored survey and returns the fields to update. The
+ * read and write happen in one transaction, so quick taps (ticking several
+ * units in a row) each build on the previous one instead of on what was on
+ * screen, and no update is lost.
+ */
+export const updateSurvey = async (id, change) => {
+  await localDb.transaction('rw', localDb.surveys, async () => {
+    const current = await localDb.surveys.get(id);
+    if (!current) return;
+    const patch = typeof change === 'function' ? change(current) : change;
+    if (patch) await localDb.surveys.update(id, { ...patch, updatedAt: new Date().toISOString() });
+  });
   await refreshLinkedRecords(id);
 };
 
-export const finishSurvey = async (survey) => {
-  const timer =
-    survey.timer?.runningSince != null
-      ? { runningSince: null, elapsedMs: survey.timer.elapsedMs + (Date.now() - survey.timer.runningSince) }
-      : survey.timer;
-  await updateSurvey(survey.id, { status: 'completed', endedAt: new Date().toISOString(), timer });
-};
+const stopClock = (timer) =>
+  timer?.runningSince != null
+    ? { runningSince: null, elapsedMs: timer.elapsedMs + (Date.now() - timer.runningSince) }
+    : timer;
+
+export const finishSurvey = (survey) =>
+  updateSurvey(survey.id, (s) => ({
+    status: 'completed',
+    endedAt: new Date().toISOString(),
+    timer: stopClock(s.timer),
+  }));
 
 export const reopenSurvey = (survey) => updateSurvey(survey.id, { status: 'active', endedAt: null });
 
 export const toggleUnitDone = (survey, unitId) =>
-  updateSurvey(survey.id, {
-    units: survey.units.map((u) => (u.id === unitId ? { ...u, done: !u.done } : u)),
-  });
+  updateSurvey(survey.id, (s) => ({
+    units: s.units.map((u) => (u.id === unitId ? { ...u, done: !u.done } : u)),
+  }));
 
 /** Woody debris: add a log as a new sampling unit (marked examined). */
-export const addLog = (survey, { decayClass, lengthM, diameterCm, note }) => {
-  const n = survey.units.length + 1;
-  const unit = {
-    id: `L${n}-${Date.now().toString(36)}`,
-    label: `L${n}`,
-    done: true,
-    meta: { decayClass, lengthM, diameterCm, note: note ?? '' },
-  };
-  return updateSurvey(survey.id, { units: [...survey.units, unit] });
-};
+export const addLog = (survey, { decayClass, lengthM, diameterCm, note }) =>
+  updateSurvey(survey.id, (s) => {
+    const n = s.units.length + 1;
+    const unit = {
+      id: `L${n}-${Date.now().toString(36)}`,
+      label: `L${n}`,
+      done: true,
+      meta: { decayClass, lengthM, diameterCm, note: note ?? '' },
+    };
+    return { units: [...s.units, unit] };
+  });
 
 export const startTimer = (survey) =>
-  updateSurvey(survey.id, { timer: { ...(survey.timer ?? { elapsedMs: 0 }), runningSince: Date.now() } });
+  updateSurvey(survey.id, (s) =>
+    s.timer?.runningSince ? null : { timer: { ...(s.timer ?? { elapsedMs: 0 }), runningSince: Date.now() } },
+  );
 
-export const pauseTimer = (survey) => {
-  const t = survey.timer;
-  if (!t?.runningSince) return Promise.resolve();
-  return updateSurvey(survey.id, {
-    timer: { runningSince: null, elapsedMs: t.elapsedMs + (Date.now() - t.runningSince) },
-  });
-};
+export const pauseTimer = (survey) =>
+  updateSurvey(survey.id, (s) => (s.timer?.runningSince ? { timer: stopClock(s.timer) } : null));
 
 /** Delete a survey; its records stay, unlinked but with their design snapshot. */
 export const deleteSurvey = async (id) => {
